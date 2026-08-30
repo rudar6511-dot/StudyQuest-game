@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyQuest — Learn. Play. Level Up.</title>
+  <meta name="description" content="StudyQuest turns Maths and Science learning into an exciting game.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-orb orb-one"></div><div class="bg-orb orb-two"></div>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">🚀</span><span>Study<span>Quest</span></span></div>
+    <div class="stats"><div><small>LEVEL</small><b id="level">1</b></div><div><small>XP</small><b id="xp">0</b></div><div><small>COINS</small><b>🪙 <span id="coins">0</span></b></div></div>
+  </header>
+
+  <main>
+    <section id="home" class="screen active">
+      <div class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">🎮 LEARNING, BUT MAKE IT A GAME</div>
+          <h1>Learn. Play.<br><span>Level Up.</span></h1>
+          <p>Explore Maths and Science missions, earn XP, collect coins and become a StudyQuest champion.</p>
+          <button class="primary" onclick="showSubjects()">Start Your Quest <span>→</span></button>
+        </div>
+        <div class="hero-card"><div class="planet">🪐</div><div class="astronaut">👨‍🚀</div><div class="floating-card fc1">⭐ +50 XP</div><div class="floating-card fc2">🧪 Science unlocked</div></div>
+      </div>
+      <div class="features"><div>⚡<b>Quick Missions</b><small>Learn in bite-sized challenges</small></div><div>🏆<b>Earn Rewards</b><small>XP, coins and badges</small></div><div>🧠<b>Build Skills</b><small>Track your learning progress</small></div></div>
+    </section>
+
+    <section id="subjects" class="screen">
+      <div class="section-head"><div><div class="eyebrow">YOUR WORLD</div><h2>Choose a <span>Mission</span></h2></div><button class="ghost" onclick="goHome()">← Home</button></div>
+      <div class="subject-grid">
+        <button class="subject math" onclick="startQuiz('math')"><div class="subject-icon">📐</div><h3>Maths</h3><p>Numbers, algebra & logic</p><strong>Play Level 1 →</strong></button>
+        <button class="subject science" onclick="startQuiz('science')"><div class="subject-icon">🔬</div><h3>Science</h3><p>Explore the world around you</p><strong>Play Level 1 →</strong></button>
+        <div class="subject locked"><div class="subject-icon">📚</div><h3>English</h3><p>Coming in the next update</p><strong>🔒 Locked</strong></div>
+        <div class="subject locked"><div class="subject-icon">🌍</div><h3>Social Science</h3><p>Coming in the next update</p><strong>🔒 Locked</strong></div>
+      </div>
+    </section>
+
+    <section id="quiz" class="screen">
+      <div class="quiz-top"><button class="ghost" onclick="showSubjects()">← Subjects</button><div class="progress-wrap"><div class="progress"><i id="progressBar"></i></div><span id="questionCount">1 / 5</span></div><div class="lives" id="lives">❤️❤️❤️</div></div>
+      <div class="quiz-card"><div class="quiz-label" id="quizSubject">MATHS MISSION</div><div class="timer" id="timer">⏱ 20</div><h2 id="question">Question</h2><div id="answers" class="answers"></div><div id="feedback" class="feedback"></div></div>
+    </section>
+
+    <section id="result" class="screen"><div class="result-card"><div class="trophy">🏆</div><div class="eyebrow">MISSION COMPLETE</div><h2 id="resultTitle">Great Job!</h2><p id="resultText"></p><div class="result-stats"><div><b id="finalScore">0</b><small>SCORE</small></div><div><b id="finalXp">0</b><small>XP EARNED</small></div><div><b id="finalCoins">0</b><small>COINS</small></div></div><button class="primary" onclick="showSubjects()">Choose Another Mission →</button></div></section>
+  </main>
+  <footer>StudyQuest • Learn something new every day 🚀</footer>
+  <script src="script.js"></script>
+</body>
+</html>
