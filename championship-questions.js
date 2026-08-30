@@ -1,0 +1,8 @@
+const championshipLevels = Array.from({length:40},(_,i)=>({level:i+1,topic:['Maths & Science','English & Social Science','STEM Challenge','Humanities Challenge'][i%4],questions:[]}));
+const mixed=[
+['Maths','What is 25% of 80?',['10','20','30','40'],1],['Science','Which organ pumps blood?',['Lungs','Heart','Brain','Kidney'],1],['English','Choose the noun: “The bright sun shines.”',['bright','shines','sun','the'],2],['Social Science','What is the capital of India?',['Mumbai','Kolkata','New Delhi','Chennai'],2],
+['Maths','What is 12 × 6?',['62','72','82','92'],1],['Science','Plants make food mainly by what process?',['Respiration','Photosynthesis','Digestion','Evaporation'],1],['English','Past tense of “go” is:',['goed','goes','went','going'],2],['Social Science','Which is the largest continent?',['Africa','Asia','Europe','Australia'],1],
+['Maths','What is 3² + 4²?',['12','20','25','49'],2],['Science','Water freezes at:',['0°C','10°C','50°C','100°C'],0],['English','Which word is an adjective?',['quickly','beautiful','run','school'],1],['Social Science','How many fundamental rights are currently recognised in India?',['4','5','6','8'],2],
+['Maths','A triangle has angles 50° and 60°. Third angle?',['60°','70°','80°','90°'],1],['Science','Which gas is most abundant in Earth’s atmosphere?',['Oxygen','Carbon dioxide','Nitrogen','Hydrogen'],2],['English','A word with the opposite meaning is called a:',['synonym','antonym','noun','verb'],1],['Social Science','The Constitution of India came into effect on:',['15 Aug 1947','26 Jan 1950','26 Nov 1949','2 Oct 1950'],1]
+];
+for(let i=0;i<40;i++){championshipLevels[i].questions=Array.from({length:10},(_,q)=>{const [s,text,a,c]=mixed[(i*10+q)%mixed.length];return{subject:s,q:text,a,c}})}
