@@ -1,36 +1,14 @@
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const get = (k, fallback = 0) => Number(localStorage.getItem(k) || fallback);
-  const set = (k, v) => localStorage.setItem(k, String(v));
-
-  function refreshDashboard() {
-    const xp = get('sqXp');
-    const coins = get('sqCoins');
-    const completed = ['math','science','english','hindi','ss'].reduce((n, s) => n + Math.max(0, Math.min(20, get('sqProgress_' + s, 1) - 1)), 0);
-    const streak = Math.max(1, get('sqStreak', 1));
-    const target = 100;
-    const current = xp % target;
-    if ($('dashXp')) $('dashXp').textContent = xp;
-    if ($('dashCoins')) $('dashCoins').textContent = coins;
-    if ($('dashCompleted')) $('dashCompleted').textContent = completed;
-    if ($('dashStreak')) $('dashStreak').textContent = streak;
-    if ($('xpProgress')) $('xpProgress').style.width = (current / target * 100) + '%';
-    if ($('dashXpText')) $('dashXpText').textContent = current + ' / ' + target + ' XP to next level';
-
-    const badges = [
-      ['🚀','First Launch', completed >= 1],
-      ['🧠','Quiz Master', completed >= 5],
-      ['🌍','World Explorer', completed >= 10],
-      ['🏆','Quest Champion', completed >= 25]
-    ];
-    const box = $('achievementList');
-    if (box) box.innerHTML = badges.map(b => `<div class="achievement ${b[2] ? 'earned' : ''}"><span>${b[0]}</span><div><b>${b[1]}</b><small>${b[2] ? 'Unlocked' : 'Keep playing to unlock'}</small></div></div>`).join('');
-  }
-
-  window.addEventListener('storage', refreshDashboard);
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('.dashboard-refresh')) refreshDashboard();
-  });
-  setTimeout(refreshDashboard, 80);
-  window.StudyQuestDashboard = { refresh: refreshDashboard };
+(()=>{
+const $=id=>document.getElementById(id), get=(k,f=0)=>Number(localStorage.getItem(k)||f), set=(k,v)=>localStorage.setItem(k,String(v));
+function streak(){const today=new Date().toISOString().slice(0,10),last=localStorage.getItem('sqLastDay');let s=get('sqStreak',0);if(last===today)return s;if(last){const d=(Date.now()-new Date(last+'T00:00:00').getTime())/86400000;s=d<=2?s+1:1}else s=1;set('sqStreak',s);localStorage.setItem('sqLastDay',today);return s}
+function completed(){return ['math','science','english','hindi','ss'].reduce((n,s)=>n+Math.max(0,Math.min(20,get('sqProgress_'+s,1)-1)),0)}
+function refresh(){const xp=get('sqXp'),coins=get('sqCoins'),done=completed(),streakNow=streak(),target=100,current=xp%target;
+if($('dashXp'))$('dashXp').textContent=xp;if($('dashCoins'))$('dashCoins').textContent=coins;if($('dashCompleted'))$('dashCompleted').textContent=done;if($('dashStreak'))$('dashStreak').textContent=streakNow;if($('xpProgress'))$('xpProgress').style.width=current+'%';if($('dashXpText'))$('dashXpText').textContent=current+' / '+target+' XP to next level';
+const badges=[['🚀','First Launch',done>=1],['🧠','Quiz Master',done>=5],['🌍','World Explorer',done>=10],['🔥','7 Day Streak',streakNow>=7],['🏆','Quest Champion',done>=25]];const box=$('achievementList');if(box)box.innerHTML=badges.map(b=>`<div class="achievement ${b[2]?'earned':''}"><span>${b[0]}</span><div><b>${b[1]}</b><small>${b[2]?'Unlocked':'Keep playing to unlock'}</small></div></div>`).join('');
+renderPremium(done,streakNow)
+}
+function renderPremium(done,st){let old=$('premiumHub');if(old)old.remove();const dash=document.querySelector('.dashboard');if(!dash)return;const hub=document.createElement('div');hub.id='premiumHub';hub.className='premium-hub';const today=new Date().toISOString().slice(0,10),claim=localStorage.getItem('sqDailyClaim')===today;hub.innerHTML=`<div class="premium-card daily"><div class="eyebrow">🔥 DAILY QUEST</div><h3>${claim?'Quest completed!':'Complete 2 missions today'}</h3><p>${claim?'Come back tomorrow for a new reward.':'Finish any 2 learning levels and earn a bonus.'}</p><div class="daily-progress"><i style="width:${claim?'100%':'0%'}"></i></div><button class="primary" ${claim?'disabled':''} id="dailyBtn">${claim?'✓ Reward Claimed':'Claim Daily Bonus'}</button></div><div class="premium-card streak-card"><div class="eyebrow">⚡ STREAK</div><strong>${st}</strong><span>days learning</span><p>Keep your streak alive by completing a mission each day.</p></div><div class="premium-card rank-card"><div class="eyebrow">🥇 PLAYER RANK</div><strong>${rank(done)}</strong><span>${done} missions completed</span><p>More completed missions unlock higher ranks.</p></div><div class="premium-card"><div class="eyebrow">🎓 CERTIFICATE</div><h3>Quest Achievement</h3><p>Show your progress with a printable achievement certificate.</p><button class="ghost" onclick="location.href='certificate.html'">Open Certificate →</button></div></div>`;dash.after(hub);const btn=hub.querySelector('#dailyBtn');if(btn)btn.onclick=()=>{const p=completed();if(p>=2){localStorage.setItem('sqDailyClaim',today);let x=get('sqXp')+100,c=get('sqCoins')+25;set('sqXp',x);set('sqCoins',c);refresh()}else alert('Complete at least 2 learning levels first!')}
+}
+function rank(n){return n>=50?'LEGEND':n>=30?'MASTER':n>=20?'CHAMPION':n>=10?'EXPLORER':n>=5?'RANGER':'ROOKIE'}
+window.addEventListener('storage',refresh);document.addEventListener('click',e=>{if(e.target.closest('.dashboard-refresh'))refresh()});setTimeout(refresh,100);window.StudyQuestDashboard={refresh};
 })();
