@@ -1,0 +1,17 @@
+/* StudyQuest Live Multiplayer - Supabase Realtime */
+const SUPABASE_URL='PASTE_YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY='PASTE_YOUR_SUPABASE_ANON_KEY';
+let sqLive=null,sqChannel=null,sqRoom=null,sqPlayer=null;
+function sqProfile(){try{return JSON.parse(localStorage.getItem('sqStudentProfile')||'{}')}catch{return{}}}
+function sqId(){let p=sqProfile();return p.id||('guest_'+Math.random().toString(36).slice(2,10))}
+function sqReady(){if(typeof supabase==='undefined'||SUPABASE_URL.startsWith('PASTE_')){alert('Live multiplayer setup is not connected yet. Add your Supabase URL and anon key in multiplayer-online.js.');return false}return true}
+async function sqConnect(){if(!sqReady())return false;if(!sqLive)sqLive=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);return true}
+function sqName(){return sqProfile().name||'Student'}
+async function createLiveRoom(){if(!await sqConnect())return;const code=Math.random().toString(36).slice(2,8).toUpperCase();const {data,error}=await sqLive.from('sq_rooms').insert({code,host_id:sqId(),name:'StudyQuest Live Room',status:'lobby'}).select().single();if(error){alert(error.message);return}sqRoom=data;await joinLiveRoom(code,true)}
+async function joinLiveRoom(code,host=false){if(!await sqConnect())return;code=String(code||'').trim().toUpperCase();const {data:room,error}=await sqLive.from('sq_rooms').select('*').eq('code',code).single();if(error||!room){alert('Room not found. Check the 6-character code.');return}sqRoom=room;const {error:e}=await sqLive.from('sq_room_players').upsert({room_id:room.id,player_id:sqId(),player_name:sqName(),ready:false},{onConflict:'room_id,player_id'});if(e){alert(e.message);return}sqChannel=sqLive.channel('sq-room-'+room.id).on('postgres_changes',{event:'*',schema:'public',table:'sq_room_players',filter:'room_id=eq.'+room.id},()=>sqRenderPlayers()).on('postgres_changes',{event:'*',schema:'public',table:'sq_rooms',filter:'id=eq.'+room.id},p=>{sqRoom=p.new;sqRenderRoom()}).subscribe();sqRenderRoom();sqRenderPlayers()}
+async function sqRenderPlayers(){if(!sqRoom||!sqLive)return;const {data}=await sqLive.from('sq_room_players').select('*').eq('room_id',sqRoom.id).order('joined_at');const box=document.getElementById('livePlayerList');if(box)box.innerHTML=(data||[]).map((p,i)=>`<div class="mp-player">${i?'🎮':'👑'} ${escapeHtml(p.player_name)} ${p.ready?'✓':''}</div>`).join('')}
+function sqRenderRoom(){const c=document.getElementById('liveRoomCode');if(c)c.textContent=sqRoom?.code||'—';const s=document.getElementById('liveRoomStatus');if(s)s.textContent=sqRoom?.status==='playing'?'MATCH LIVE':'WAITING FOR PLAYERS'}
+async function toggleLiveReady(){if(!sqRoom||!sqLive)return;const {data}=await sqLive.from('sq_room_players').select('ready').eq('room_id',sqRoom.id).eq('player_id',sqId()).single();await sqLive.from('sq_room_players').update({ready:!data?.ready}).eq('room_id',sqRoom.id).eq('player_id',sqId());sqRenderPlayers()}
+async function startLiveMatch(){if(!sqRoom||sqRoom.host_id!==sqId())return alert('Only the room host can start the match.');await sqLive.from('sq_rooms').update({status:'playing',started_at:new Date().toISOString()}).eq('id',sqRoom.id)}
+function leaveLiveRoom(){if(sqChannel)sqLive.removeChannel(sqChannel);sqRoom=null;sqChannel=null;document.getElementById('liveLobby')?.setAttribute('hidden','',true)}
+window.StudyQuestLive={create:createLiveRoom,join:joinLiveRoom,ready:toggleLiveReady,start:startLiveMatch,leave:leaveLiveRoom};
