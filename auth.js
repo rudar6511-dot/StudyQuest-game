@@ -3,7 +3,7 @@
    Password accounts use a generated internal email from the username.
 */
 (function(){
-  const URL='https://cfoyqyplnmxsxyxyfdb.supabase.co';
+  const URL='https://cfoyqyplnmxsxyxyfdbb.supabase.co';
   const KEY='sb_publishable_WcW00SpDEMZKGBas8dNRPA_dDjjVJ1s';
   let sb=null;
   const $=id=>document.getElementById(id);
