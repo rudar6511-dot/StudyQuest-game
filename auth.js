@@ -10,7 +10,7 @@
   const $=id=>document.getElementById(id);
   const clean=v=>String(v||'').trim();
   const emailFor=u=>clean(u).toLowerCase()+'@studyquest.local';
-  const validQuestId=v=>/^[A-Za-z0-9._-]+@quest\.local$/i.test(clean(v));
+  const validQuestId=v=>/^.+@quest\.local$/i.test(clean(v));
   const saveSession=(profile)=>{
     localStorage.setItem('sqStudentProfile',JSON.stringify(profile));
     localStorage.setItem('sqSession','1');
