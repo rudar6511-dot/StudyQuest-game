@@ -1,5 +1,5 @@
--- StudyQuest cloud profile table
--- Run this once in Supabase SQL Editor.
+-- StudyQuest cloud profile + Quest ID lookup
+-- Run this entire file once in Supabase SQL Editor.
 create table if not exists public.sq_student_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   username text unique not null,
@@ -28,6 +28,64 @@ create policy "profiles own insert" on public.sq_student_profiles
 create policy "profiles own update" on public.sq_student_profiles
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Allow the online leaderboard to read only the non-sensitive game identity fields.
--- If you later want stricter privacy, replace the leaderboard's direct table read
--- with a security-definer RPC/view containing only username/student_name + game stats.
+-- Automatically create the profile from Supabase Auth metadata.
+-- This also works when email confirmation is enabled, because the trigger runs
+-- inside Supabase after the Auth user is created.
+create or replace function public.sq_create_student_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.sq_student_profiles (
+    user_id, username, quest_id, student_name, school_name, school_board,
+    state, village, district, address
+  ) values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'username',''),
+    coalesce(new.raw_user_meta_data->>'quest_id',''),
+    coalesce(new.raw_user_meta_data->>'student_name','Student'),
+    coalesce(new.raw_user_meta_data->>'school_name',''),
+    coalesce(new.raw_user_meta_data->>'school_board',''),
+    coalesce(new.raw_user_meta_data->>'state',''),
+    coalesce(new.raw_user_meta_data->>'village',''),
+    coalesce(new.raw_user_meta_data->>'district',''),
+    coalesce(new.raw_user_meta_data->>'address','')
+  )
+  on conflict (user_id) do update set
+    username=excluded.username,
+    quest_id=excluded.quest_id,
+    student_name=excluded.student_name,
+    school_name=excluded.school_name,
+    school_board=excluded.school_board,
+    state=excluded.state,
+    village=excluded.village,
+    district=excluded.district,
+    address=excluded.address,
+    updated_at=now();
+  return new;
+end;
+$$;
+
+drop trigger if exists sq_create_student_profile on auth.users;
+create trigger sq_create_student_profile
+after insert on auth.users
+for each row execute function public.sq_create_student_profile();
+
+-- Safe Quest ID lookup: returns only the username needed for password login.
+create or replace function public.sq_get_username_by_quest_id(p_quest_id text)
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select username
+  from public.sq_student_profiles
+  where lower(quest_id) = lower(trim(p_quest_id))
+  limit 1;
+$$;
+
+revoke all on function public.sq_get_username_by_quest_id(text) from public;
+grant execute on function public.sq_get_username_by_quest_id(text) to anon, authenticated;
