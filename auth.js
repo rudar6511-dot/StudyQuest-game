@@ -1,14 +1,16 @@
 /* StudyQuest Supabase Auth bridge
-   The browser uses a generated internal email from the student's username so the UI
-   can stay username + Quest ID based. Do not put service-role keys in this file.
+   Quest ID format: any non-empty ID followed by @quest.local.
+   The browser uses a generated internal email from the student's username.
+   Do not put service-role keys in this file.
 */
 (function(){
-  const URL='https://cfoyqyplnmxsxyxyfdbb.supabase.co';
+  const URL='https://cfoyqyplnmxsxyxyfdb.supabase.co';
   const KEY='sb_publishable_WcW00SpDEMZKGBas8dNRPA_dDjjVJ1s';
   let sb=null;
   const $=id=>document.getElementById(id);
   const clean=v=>String(v||'').trim();
   const emailFor=u=>clean(u).toLowerCase()+'@studyquest.local';
+  const validQuestId=v=>/^[A-Za-z0-9._-]+@quest\.local$/i.test(clean(v));
   const saveSession=(profile)=>{
     localStorage.setItem('sqStudentProfile',JSON.stringify(profile));
     localStorage.setItem('sqSession','1');
@@ -21,7 +23,8 @@
   }
   async function signup(a){
     if(!/^[A-Za-z0-9_]{3,30}$/.test(a.username))return msg('Username: use 3–30 letters, numbers or _.');
-    if(!/^[A-Za-z0-9_-]{3,20}$/.test(a.questId))return msg('Quest ID: use 3–20 letters, numbers, _ or -.');
+    if(!validQuestId(a.questId))return msg('Quest ID must end with @quest.local. You can use any length before @quest.local.');
+    a.questId=clean(a.questId).replace(/@quest\.local$/i,'@quest.local');
     if(!a.name||!a.school||!a.schoolBoard||!a.state||!a.village||!a.district)return msg('Please fill all required student, school and location fields.');
     if(a.password.length<6)return msg('Password must be at least 6 characters.');
     setBusy(true);
@@ -38,10 +41,13 @@
     if(!id||!pw)return msg('Enter your Username or Quest ID and password.');
     setBusy(true);
     let username=id;
-    if(!/^[A-Za-z0-9_]{3,30}$/.test(username)){
-      const {data,error}=await sb.from('sq_student_profiles').select('username').eq('quest_id',id).maybeSingle();
-      if(error||!data){setBusy(false);return msg('Account not found. Check your Username/Quest ID.')}
+    if(validQuestId(id)){
+      const questId=id.replace(/@quest\.local$/i,'@quest.local');
+      const {data,error}=await sb.from('sq_student_profiles').select('username').eq('quest_id',questId).maybeSingle();
+      if(error||!data){setBusy(false);return msg('Account not found. Check your Quest ID.')}
       username=data.username;
+    }else if(!/^[A-Za-z0-9_]{3,30}$/.test(username)){
+      setBusy(false);return msg('Enter a valid Username or a Quest ID ending with @quest.local.');
     }
     const {data,error}=await sb.auth.signInWithPassword({email:emailFor(username),password:pw});
     if(error||!data.user){setBusy(false);return msg('Incorrect Username/Quest ID or password.')}
