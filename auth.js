@@ -8,7 +8,9 @@
   let sb=null;
   const $=id=>document.getElementById(id);
   const clean=v=>String(v??'').trim();
-  const emailFor=u=>clean(u).toLowerCase()+'@studyquest.local';
+  /* Use the real Supabase project domain for the hidden Auth email.
+     Students still log in with Username or Quest ID; this email is never shown. */
+  const emailFor=u=>clean(u).toLowerCase()+'@cfoyqyplnmxsxyxyfdbb.supabase.co';
   const validQuestId=v=>/^.+@quest\.local$/i.test(clean(v));
   const normalQuestId=v=>clean(v).replace(/@quest\.local$/i,'@quest.local');
   const saveSession=p=>{localStorage.setItem('sqStudentProfile',JSON.stringify(p));localStorage.setItem('sqSession','1');localStorage.setItem('sqAuthV2','1')};
@@ -19,7 +21,7 @@
     const s=String(e?.message||e||'').toLowerCase();
     if(s.includes('failed to fetch')||s.includes('networkerror')||s.includes('network request failed'))return 'Supabase server could not be reached. Check your internet connection and make sure the Supabase project is active, then refresh this page.';
     if(s.includes('user already registered')||s.includes('already registered')||s.includes('already exists'))return 'This Username already exists. Please use Login.';
-    if(s.includes('email')&&s.includes('invalid'))return 'The internal account email was rejected by Supabase. Please check the Supabase Auth settings.';
+    if(s.includes('email')&&s.includes('invalid'))return 'Supabase rejected the hidden account email. Please check the Supabase Auth email settings.';
     if(s.includes('password'))return 'Password must be at least 6 characters.';
     return (mode==='login'?'Login failed: ':'Account creation failed: ')+String(e?.message||e||'Unknown error');
   }
