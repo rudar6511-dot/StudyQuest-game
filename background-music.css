@@ -1,0 +1,12 @@
+.sq-music-button{
+position:fixed;right:20px;bottom:20px;z-index:9999;
+display:flex;align-items:center;gap:8px;padding:11px 16px;
+border:1px solid rgba(255,255,255,.2);border-radius:999px;
+background:rgba(9,14,35,.82);color:#fff;backdrop-filter:blur(14px);
+box-shadow:0 10px 30px rgba(0,0,0,.28);cursor:pointer;
+font:700 13px/1 system-ui,sans-serif;transition:.2s ease;
+}
+.sq-music-button:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.36)}
+.sq-music-icon{font-size:18px;line-height:1}
+.sq-music-label{white-space:nowrap}
+@media(max-width:600px){.sq-music-button{right:12px;bottom:12px;padding:10px 13px}.sq-music-label{display:none}}
