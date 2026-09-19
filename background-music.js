@@ -1,4 +1,4 @@
-/* StudyQuest — original arcade-style game soundtrack */
+/* StudyQuest — original arcade-style game soundtrack + glass click SFX */
 (function(){
   "use strict";
   const path=(location.pathname.split("/").pop()||"home.html").toLowerCase();
@@ -49,6 +49,44 @@
     osc.start(when); osc.stop(when+duration+.025);
   }
 
+  // Short original glass-like click: a bright tick + tiny high-frequency shimmer.
+  function glassClick(){
+    try{
+      setup();
+      if(ctx.state==="suspended")ctx.resume();
+
+      const now=ctx.currentTime;
+      const out=ctx.createGain();
+      out.gain.setValueAtTime(.0001,now);
+      out.gain.exponentialRampToValueAtTime(.055,now+.002);
+      out.gain.exponentialRampToValueAtTime(.0001,now+.105);
+      out.connect(master);
+
+      const osc=ctx.createOscillator();
+      osc.type="triangle";
+      osc.frequency.setValueAtTime(3600,now);
+      osc.frequency.exponentialRampToValueAtTime(1250,now+.075);
+      osc.connect(out);
+      osc.start(now);
+      osc.stop(now+.11);
+
+      const buffer=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.055),ctx.sampleRate);
+      const data=buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++){
+        const decay=1-i/data.length;
+        data[i]=(Math.random()*2-1)*decay*decay;
+      }
+      const noise=ctx.createBufferSource();
+      const noiseGain=ctx.createGain();
+      noiseGain.gain.setValueAtTime(.018,now);
+      noiseGain.gain.exponentialRampToValueAtTime(.0001,now+.055);
+      noise.buffer=buffer;
+      noise.connect(noiseGain);
+      noiseGain.connect(master);
+      noise.start(now);
+    }catch(e){}
+  }
+
   function kick(when){
     const osc=ctx.createOscillator(),gain=ctx.createGain();
     osc.type="sine";
@@ -79,29 +117,24 @@
     const pos=step%theme.melody.length;
     const semitone=theme.melody[pos];
 
-    // Driving four-on-the-floor game beat.
     kick(now);
     if(step%2===0) kick(now+beat*.5);
     hat(now+beat*.25);
     hat(now+beat*.75);
 
-    // Punchy lead melody.
     const lead=midiFreq(57+semitone);
     note(lead,now,beat*.42,theme.lead,.075);
     note(lead*2,now,beat*.16,"triangle",.018);
 
-    // Low bass movement.
     const bassRoots=[theme.root,theme.root,theme.root*1.122,theme.root*.841];
     const bass=bassRoots[pos%4];
     note(bass,now,beat*.72,theme.bass,.10);
 
-    // Chord stab every second beat.
     if(step%2===0){
       note(lead/2,now,beat*.58,theme.pad,.028);
       note(lead*.75,now,beat*.58,theme.pad,.020);
     }
 
-    // Small arcade-style pickup accent.
     if(step%8===7){
       note(lead*1.5,now+beat*.18,beat*.20,"square",.032);
       note(lead*1.78,now+beat*.32,beat*.18,"square",.024);
@@ -122,9 +155,16 @@
     }catch(e){console.warn("StudyQuest music unavailable",e);}
   }
 
-  window.StudyQuestMusic={start,theme};
+  window.StudyQuestMusic={start,theme,click:glassClick};
 
   function init(){
+    // Capture clicks globally so buttons, cards, links and other clickable UI
+    // get the same short glass-like feedback sound.
+    document.addEventListener("click",function(e){
+      const target=e.target.closest("button,a,[role='button'],input[type='button'],input[type='submit'],summary,.clickable");
+      if(target) glassClick();
+    },true);
+
     document.addEventListener("pointerdown",function once(){
       document.removeEventListener("pointerdown",once);
       start();
