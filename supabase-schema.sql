@@ -28,3 +28,25 @@ create policy "players update" on public.sq_room_players for update using (true)
 create policy "players leave" on public.sq_room_players for delete using (true);
 alter publication supabase_realtime add table public.sq_rooms;
 alter publication supabase_realtime add table public.sq_room_players;
+
+
+-- Global StudyQuest player presence for the online players sidebar.
+create table if not exists public.sq_presence (
+  player_id text primary key,
+  player_name text not null default 'Student',
+  last_seen timestamptz not null default now()
+);
+alter table public.sq_presence enable row level security;
+drop policy if exists "presence read" on public.sq_presence;
+drop policy if exists "presence insert" on public.sq_presence;
+drop policy if exists "presence update" on public.sq_presence;
+create policy "presence read" on public.sq_presence for select using (true);
+create policy "presence insert" on public.sq_presence for insert with check (true);
+create policy "presence update" on public.sq_presence for update using (true) with check (true);
+grant select, insert, update on public.sq_presence to anon, authenticated;
+do $$
+begin
+  alter publication supabase_realtime add table public.sq_presence;
+exception
+  when duplicate_object then null;
+end $$;
