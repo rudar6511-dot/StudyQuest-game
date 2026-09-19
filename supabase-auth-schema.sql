@@ -28,9 +28,6 @@ create policy "profiles own insert" on public.sq_student_profiles
 create policy "profiles own update" on public.sq_student_profiles
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Automatically create the profile from Supabase Auth metadata.
--- This also works when email confirmation is enabled, because the trigger runs
--- inside Supabase after the Auth user is created.
 create or replace function public.sq_create_student_profile()
 returns trigger
 language plpgsql
@@ -73,7 +70,6 @@ create trigger sq_create_student_profile
 after insert on auth.users
 for each row execute function public.sq_create_student_profile();
 
--- Safe Quest ID lookup: returns only the username needed for password login.
 create or replace function public.sq_get_username_by_quest_id(p_quest_id text)
 returns text
 language sql
@@ -89,3 +85,33 @@ $$;
 
 revoke all on function public.sq_get_username_by_quest_id(text) from public;
 grant execute on function public.sq_get_username_by_quest_id(text) to anon, authenticated;
+
+-- Global StudyQuest online/offline roster.
+-- Stores only the game ID, display name and heartbeat time.
+create table if not exists public.sq_presence (
+  player_id text primary key,
+  player_name text not null default 'Student',
+  last_seen timestamptz not null default now()
+);
+
+alter table public.sq_presence enable row level security;
+
+drop policy if exists "presence read" on public.sq_presence;
+drop policy if exists "presence insert" on public.sq_presence;
+drop policy if exists "presence update" on public.sq_presence;
+
+create policy "presence read" on public.sq_presence
+  for select using (true);
+create policy "presence insert" on public.sq_presence
+  for insert with check (true);
+create policy "presence update" on public.sq_presence
+  for update using (true) with check (true);
+
+grant select, insert, update on public.sq_presence to anon, authenticated;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.sq_presence;
+exception
+  when duplicate_object then null;
+end $$;
