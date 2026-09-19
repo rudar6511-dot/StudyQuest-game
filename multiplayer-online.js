@@ -50,7 +50,7 @@ function sqPresenceStatus(lastSeen){
   return Date.now()-new Date(lastSeen).getTime() < SQ_ONLINE_WINDOW;
 }
 
-function sqRenderGlobalPlayers(rows){
+function sqPaintGlobalPlayers(rows){
   const onlineBox=document.getElementById('globalOnlinePlayers');
   const offlineBox=document.getElementById('globalOfflinePlayers');
   const onlineCount=document.getElementById('globalOnlineCount');
@@ -79,7 +79,7 @@ function sqRenderGlobalPlayers(rows){
 async function sqRenderGlobalPlayers(){
   if(!sqLive||!sqReady())return;
   const {data,error}=await sqLive.from('sq_presence').select('player_id,player_name,last_seen').order('last_seen',{ascending:false});
-  if(!error)sqRenderGlobalPlayers(data||[]);
+  if(!error)sqPaintGlobalPlayers(data||[]);
 }
 
 async function startGlobalPresence(){
