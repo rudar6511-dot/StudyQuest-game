@@ -1,0 +1,90 @@
+/* Homepage player roster */
+.home-player-roster{
+  margin:35px auto;
+  max-width:1200px;
+  padding:24px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:26px;
+  background:rgba(10,15,35,.72);
+  box-shadow:0 20px 55px rgba(0,0,0,.22);
+}
+.home-roster-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:20px;
+}
+.home-roster-title{font-size:22px;font-weight:800}
+.home-roster-live{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 11px;
+  border-radius:999px;
+  background:rgba(70,220,130,.12);
+  color:#75f0a4;
+  font-size:12px;
+  font-weight:800;
+}
+.home-roster-live::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:#55e58b;
+  box-shadow:0 0 12px rgba(85,229,139,.9);
+}
+.home-roster-columns{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+.home-roster-section{
+  min-height:130px;
+  padding:16px;
+  border-radius:18px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08);
+}
+.home-roster-section h4{
+  margin:0 0 12px;
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  letter-spacing:.08em;
+}
+.home-roster-section h4 span{opacity:.65}
+.home-global-player{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 10px;
+  margin:6px 0;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+}
+.home-global-player.is-me{outline:1px solid rgba(120,180,255,.35)}
+.home-player-dot{
+  width:9px;height:9px;border-radius:50%;
+  flex:0 0 auto;
+  background:#747b91;
+}
+.home-global-player.is-online .home-player-dot{
+  background:#55e58b;
+  box-shadow:0 0 10px rgba(85,229,139,.75);
+}
+.home-player-info{display:flex;flex-direction:column;min-width:0}
+.home-player-info b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-player-info small{font-size:10px;opacity:.65}
+.home-player-info em{
+  font-size:10px;
+  opacity:.48;
+  font-style:normal;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.home-empty-roster{padding:20px 8px;opacity:.5;font-size:13px;text-align:center}
+@media(max-width:700px){
+  .home-roster-columns{grid-template-columns:1fr}
+  .home-player-roster{padding:18px}
+}
