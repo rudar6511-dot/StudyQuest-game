@@ -2,68 +2,73 @@
   "use strict";
 
   let deferredPrompt = null;
+  let installButton = null;
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
-
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+        .then(() => console.log("StudyQuest PWA service worker ready"))
         .catch(error => console.warn("StudyQuest PWA registration failed:", error));
     });
   }
 
-  function addInstallButton() {
+  function showInstallButton() {
     if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) return;
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "sq-install-app";
-    button.textContent = "📱 Install StudyQuest";
-    button.setAttribute("aria-label", "Install StudyQuest app");
-    button.hidden = true;
+    installButton = document.createElement("button");
+    installButton.type = "button";
+    installButton.className = "sq-install-app";
+    installButton.textContent = "📱 INSTALL STUDYQUEST";
+    installButton.setAttribute("aria-label", "Install StudyQuest app");
 
-    Object.assign(button.style, {
+    Object.assign(installButton.style, {
       position: "fixed",
       right: "18px",
       bottom: "18px",
-      zIndex: "99999",
-      border: "0",
+      zIndex: "999999",
+      border: "2px solid rgba(255,255,255,.35)",
       borderRadius: "999px",
-      padding: "12px 18px",
-      font: "700 14px system-ui, sans-serif",
+      padding: "13px 20px",
+      font: "800 14px system-ui, sans-serif",
       color: "#fff",
       background: "linear-gradient(135deg,#7c3aed,#2563eb)",
-      boxShadow: "0 10px 30px rgba(0,0,0,.28)",
+      boxShadow: "0 10px 35px rgba(0,0,0,.38)",
       cursor: "pointer"
     });
 
-    button.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === "accepted") button.hidden = true;
-      deferredPrompt = null;
+    installButton.addEventListener("click", async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice.outcome === "accepted") installButton.remove();
+        deferredPrompt = null;
+        return;
+      }
+
+      alert(
+        "StudyQuest is ready as a web app. If the install popup did not appear, open your browser menu (⋮) and choose 'Install StudyQuest' or 'Add to Home screen'."
+      );
     });
 
-    document.body.appendChild(button);
-
-    window.addEventListener("beforeinstallprompt", event => {
-      event.preventDefault();
-      deferredPrompt = event;
-      button.hidden = false;
-    });
-
-    window.addEventListener("appinstalled", () => {
-      deferredPrompt = null;
-      button.hidden = true;
-    });
+    document.body.appendChild(installButton);
   }
+
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredPrompt = event;
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    if (installButton) installButton.remove();
+  });
 
   registerServiceWorker();
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", addInstallButton, { once: true });
+    document.addEventListener("DOMContentLoaded", showInstallButton, { once: true });
   } else {
-    addInstallButton();
+    showInstallButton();
   }
 })();
