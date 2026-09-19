@@ -31,3 +31,71 @@ async function startLiveMatch(){if(!sqRoom||sqRoom.host_id!==sqId())return alert
 async function leaveLiveRoom(){if(sqRoom&&sqLive)await sqLive.from('sq_room_players').delete().eq('room_id',sqRoom.id).eq('player_id',sqId());if(sqChannel)sqLive.removeChannel(sqChannel);sqRoom=null;sqChannel=null;sqMatchWasLive=false;document.getElementById('liveMatch')?.setAttribute('hidden',true);document.getElementById('liveLobby')?.setAttribute('hidden',true);document.getElementById('setup')?.removeAttribute('hidden')}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 window.StudyQuestLive={create:createLiveRoom,join:joinLiveRoom,ready:toggleLiveReady,start:startLiveMatch,leave:leaveLiveRoom,answer:answerLiveQuestion};
+
+
+/* Global Free-Fire-style player roster */
+let sqPresenceTimer=null,sqPresenceChannel=null;
+const SQ_ONLINE_WINDOW=45000;
+
+async function sqTouchPresence(){
+  if(!sqLive||!sqReady())return;
+  const id=sqId(), name=sqName();
+  await sqLive.from('sq_presence').upsert(
+    {player_id:id,player_name:name,last_seen:new Date().toISOString()},
+    {onConflict:'player_id'}
+  );
+}
+
+function sqPresenceStatus(lastSeen){
+  return Date.now()-new Date(lastSeen).getTime() < SQ_ONLINE_WINDOW;
+}
+
+function sqRenderGlobalPlayers(rows){
+  const onlineBox=document.getElementById('globalOnlinePlayers');
+  const offlineBox=document.getElementById('globalOfflinePlayers');
+  const onlineCount=document.getElementById('globalOnlineCount');
+  const offlineCount=document.getElementById('globalOfflineCount');
+  if(!onlineBox||!offlineBox)return;
+  const now=Date.now();
+  const sorted=(rows||[]).slice().sort((a,b)=>{
+    const ao=sqPresenceStatus(a.last_seen), bo=sqPresenceStatus(b.last_seen);
+    if(ao!==bo)return bo-ao;
+    return String(a.player_name||'Student').localeCompare(String(b.player_name||'Student'));
+  });
+  const online=sorted.filter(p=>sqPresenceStatus(p.last_seen));
+  const offline=sorted.filter(p=>!sqPresenceStatus(p.last_seen));
+  if(onlineCount)onlineCount.textContent=online.length;
+  if(offlineCount)offlineCount.textContent=offline.length;
+  const me=sqId();
+  const card=(p,isOnline)=>`<div class="global-player ${isOnline?'is-online':'is-offline'} ${p.player_id===me?'is-me':''}">
+    <span class="player-dot"></span>
+    <span class="global-player-name">${escapeHtml(p.player_name||'Student')}${p.player_id===me?' <small>(You)</small>':''}</span>
+    <span class="global-player-id">${escapeHtml(p.player_id||'')}</span>
+  </div>`;
+  onlineBox.innerHTML=online.length?online.map(p=>card(p,true)).join(''):'<div class="empty-roster">No players online</div>';
+  offlineBox.innerHTML=offline.length?offline.map(p=>card(p,false)).join(''):'<div class="empty-roster">No offline players</div>';
+}
+
+async function sqRenderGlobalPlayers(){
+  if(!sqLive||!sqReady())return;
+  const {data,error}=await sqLive.from('sq_presence').select('player_id,player_name,last_seen').order('last_seen',{ascending:false});
+  if(!error)sqRenderGlobalPlayers(data||[]);
+}
+
+async function startGlobalPresence(){
+  if(!await sqConnect())return;
+  await sqTouchPresence();
+  await sqRenderGlobalPlayers();
+  if(sqPresenceTimer)clearInterval(sqPresenceTimer);
+  sqPresenceTimer=setInterval(async()=>{
+    await sqTouchPresence();
+    await sqRenderGlobalPlayers();
+  },20000);
+  if(sqPresenceChannel)sqLive.removeChannel(sqPresenceChannel);
+  sqPresenceChannel=sqLive.channel('sq-global-player-roster')
+    .on('postgres_changes',{event:'*',schema:'public',table:'sq_presence'},()=>sqRenderGlobalPlayers())
+    .subscribe();
+}
+
+window.addEventListener('DOMContentLoaded',()=>startGlobalPresence());
+window.addEventListener('beforeunload',()=>{if(sqPresenceTimer)clearInterval(sqPresenceTimer)});
