@@ -34,6 +34,8 @@
     const onlineBox=document.getElementById('homeOnlinePlayers'),offlineBox=document.getElementById('homeOfflinePlayers');
     if(!onlineBox||!offlineBox)return;
     const rows=(data||[]).slice().sort((a,b)=>{const ao=isOnline(a.last_seen),bo=isOnline(b.last_seen);if(ao!==bo)return bo-ao;return String(a.player_name||'Student').localeCompare(String(b.player_name||'Student'))});
+    const ids=rows.filter(p=>!p.player_username&&!String(p.player_id||'').startsWith('guest_')).map(p=>p.player_id).filter(Boolean);
+    if(ids.length){try{const {data:pub}=await client.rpc('sq_get_public_usernames',{p_user_ids:ids});(pub||[]).forEach(u=>{const row=rows.find(p=>String(p.player_id)===String(u.user_id));if(row)row.player_username=u.username})}catch(e){console.warn('Could not resolve old player usernames',e)}}
     const online=rows.filter(p=>isOnline(p.last_seen)),offline=rows.filter(p=>!isOnline(p.last_seen));
     document.getElementById('homeOnlineCount').textContent=online.length;document.getElementById('homeOfflineCount').textContent=offline.length;
     const me=playerId();
