@@ -19,12 +19,11 @@
     return id;
   }
   function playerName(){return profile().name||'Student'}
+  function currentUsername(){return String(profile().username||'').trim()}
   function safe(s){
     return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   }
-  function isOnline(lastSeen){
-    return Date.now()-new Date(lastSeen).getTime()<ONLINE_WINDOW;
-  }
+  function isOnline(lastSeen){return Date.now()-new Date(lastSeen).getTime()<ONLINE_WINDOW}
   async function connect(){
     if(typeof supabase==='undefined')return false;
     if(!client)client=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -36,6 +35,42 @@
       {player_id:playerId(),player_name:playerName(),last_seen:new Date().toISOString()},
       {onConflict:'player_id'}
     );
+  }
+  async function sendOfflineRequest(username,btn){
+    username=String(username||'').trim();
+    const me=currentUsername();
+    if(!username||!me||username.toLowerCase()===me.toLowerCase()){
+      if(btn){btn.textContent='Not available';btn.disabled=true}
+      return;
+    }
+    if(btn){btn.disabled=true;btn.textContent='Sending…'}
+    try{
+      const {data:existing,error:findError}=await client.from('sq_friend_requests')
+        .select('id,status')
+        .eq('sender_username',me)
+        .eq('receiver_username',username)
+        .maybeSingle();
+      if(findError)throw findError;
+      if(existing){
+        btn.textContent=existing.status==='pending'?'Requested ✓':existing.status==='accepted'?'Friends ✓':'🤝 Request';
+        if(existing.status==='pending'||existing.status==='accepted')btn.disabled=true;
+        return;
+      }
+      const {error}=await client.from('sq_friend_requests').insert({
+        sender_username:me,
+        sender_name:playerName(),
+        receiver_username:username,
+        status:'pending'
+      });
+      if(error)throw error;
+      btn.textContent='Requested ✓';
+      btn.disabled=true;
+    }catch(e){
+      console.warn('Offline friend request failed:',e);
+      btn.disabled=false;
+      btn.textContent='🤝 Request';
+      alert('Request send nahi ho saki. Please try again.');
+    }
   }
   async function render(){
     if(!client)return;
@@ -56,12 +91,20 @@
     document.getElementById('homeOnlineCount').textContent=online.length;
     document.getElementById('homeOfflineCount').textContent=offline.length;
     const me=playerId();
-    const card=(p,on)=>`<div class="home-global-player ${on?'is-online':'is-offline'} ${p.player_id===me?'is-me':''}">
-      <span class="home-player-dot"></span>
-      <span class="home-player-info"><b>${safe(p.player_name||'Student')}${p.player_id===me?' <small>(You)</small>':''}</b><em>${safe(p.player_id||'')}</em></span>
-    </div>`;
+    const card=(p,on)=>{
+      const username=String(p.player_id||'').trim();
+      const canRequest=!on && p.player_id!==me && currentUsername() && username && !username.startsWith('guest_');
+      return `<div class="home-global-player ${on?'is-online':'is-offline'} ${p.player_id===me?'is-me':''}">
+        <span class="home-player-dot"></span>
+        <span class="home-player-info"><b>${safe(p.player_name||'Student')}${p.player_id===me?' <small>(You)</small>':''}</b><em>${safe(p.player_id||'')}</em></span>
+        ${canRequest?`<button class="home-player-request" type="button" data-request-user="${safe(username)}">🤝 Request</button>`:''}
+      </div>`;
+    };
     onlineBox.innerHTML=online.length?online.map(p=>card(p,true)).join(''):'<div class="home-empty-roster">No players online</div>';
     offlineBox.innerHTML=offline.length?offline.map(p=>card(p,false)).join(''):'<div class="home-empty-roster">No offline players</div>';
+    offlineBox.querySelectorAll('[data-request-user]').forEach(btn=>{
+      btn.addEventListener('click',()=>sendOfflineRequest(btn.dataset.requestUser,btn));
+    });
   }
   async function start(){
     if(!await connect())return;
