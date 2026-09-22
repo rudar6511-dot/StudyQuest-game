@@ -117,3 +117,23 @@ begin
 exception
   when duplicate_object then null;
 end $$;
+
+
+-- Resolve usernames for older presence rows so friend requests also work
+-- for players who were offline before player_username was added.
+create or replace function public.sq_get_public_usernames(p_user_ids text[])
+returns table(user_id text, username text)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select sp.user_id::text, sp.username
+  from public.sq_student_profiles sp
+  where sp.user_id::text = any(p_user_ids)
+    and sp.username is not null
+    and sp.username <> '';
+$$;
+
+revoke all on function public.sq_get_public_usernames(text[]) from public;
+grant execute on function public.sq_get_public_usernames(text[]) to anon, authenticated;
