@@ -30,7 +30,7 @@ async function toggleLiveReady(){if(!sqRoom||!sqLive)return;const {data}=await s
 async function startLiveMatch(){if(!sqRoom||sqRoom.host_id!==sqId())return alert('Only the room host can start the match.');const {error}=await sqLive.from('sq_rooms').update({status:'playing',started_at:new Date().toISOString()}).eq('id',sqRoom.id);if(error)alert('Could not start match: '+error.message)}
 async function leaveLiveRoom(){if(sqRoom&&sqLive)await sqLive.from('sq_room_players').delete().eq('room_id',sqRoom.id).eq('player_id',sqId());if(sqChannel)sqLive.removeChannel(sqChannel);sqRoom=null;sqChannel=null;sqMatchWasLive=false;document.getElementById('liveMatch')?.setAttribute('hidden',true);document.getElementById('liveLobby')?.setAttribute('hidden',true);document.getElementById('setup')?.removeAttribute('hidden')}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-window.StudyQuestLive={create:createLiveRoom,join:joinLiveRoom,ready:toggleLiveReady,start:startLiveMatch,leave:leaveLiveRoom,answer:answerLiveQuestion};
+window.StudyQuestLive={create:createLiveRoom,join:joinLiveRoom,ready:toggleLiveReady,start:startLiveMatch,leave:leaveLiveRoom,answer:answerLiveQuestion,searchStudents:()=>sqSearchStudents(document.getElementById('friendSearch')?.value||''),sendRequest:sendFriendRequest,respondRequest:respondFriendRequest};
 
 
 /* Global Free-Fire-style player roster */
@@ -99,3 +99,50 @@ async function startGlobalPresence(){
 
 window.addEventListener('DOMContentLoaded',()=>startGlobalPresence());
 window.addEventListener('beforeunload',()=>{if(sqPresenceTimer)clearInterval(sqPresenceTimer)});
+
+/* Student search + friend requests */
+let sqFriendTimer=null;
+function sqCurrentUsername(){const p=sqProfile();return String(p.username||'').trim()}
+async function sqSearchStudents(query){
+  if(!await sqConnect())return;
+  query=String(query||'').trim();
+  const box=document.getElementById('friendSearchResults'); if(!box)return;
+  if(query.length<2){box.innerHTML='<div class="empty-roster">Enter at least 2 characters.</div>';return}
+  box.innerHTML='<div class="empty-roster">Searching…</div>';
+  const {data,error}=await sqLive.rpc('sq_find_students',{p_query:query});
+  if(error){box.innerHTML='<div class="empty-roster">Search is unavailable. Run the latest Supabase schema SQL first.</div>';return}
+  const me=sqCurrentUsername().toLowerCase();
+  const rows=(data||[]).filter(x=>String(x.username||'').toLowerCase()!==me);
+  if(!rows.length){box.innerHTML='<div class="empty-roster">No matching StudyQuest student found.</div>';return}
+  box.innerHTML=rows.map(p=>'<div class="friend-result"><div class="friend-result-info"><strong>'+escapeHtml(p.student_name||'Student')+'</strong><span>@'+escapeHtml(p.username||'')+'</span><small>Quest ID: '+escapeHtml(p.quest_id||'')+'</small></div><button class="live-btn friend-send" onclick="StudyQuestLive.sendRequest(\''+escapeHtml(p.username||'')+'\')">➕ Request</button></div>').join('');
+}
+async function sendFriendRequest(username){
+  if(!await sqConnect())return;
+  const from=sqCurrentUsername(); if(!from)return alert('Please log in with your StudyQuest account first.');
+  username=String(username||'').trim();
+  if(!username||username.toLowerCase()===from.toLowerCase())return alert('You cannot send a request to yourself.');
+  const {error}=await sqLive.from('sq_friend_requests').insert({sender_username:from,sender_name:sqName(),receiver_username:username,status:'pending'});
+  if(error){if(String(error.message||'').toLowerCase().includes('duplicate'))alert('A request is already pending or you are already connected.');else alert('Could not send request: '+error.message);return}
+  alert('Friend request sent to @'+username+'!');
+  sqSearchStudents(document.getElementById('friendSearch')?.value||'');
+}
+async function loadFriendRequests(){
+  if(!await sqConnect())return;
+  const me=sqCurrentUsername(); if(!me)return;
+  const {data,error}=await sqLive.from('sq_friend_requests').select('id,sender_username,sender_name,status,created_at').eq('receiver_username',me).eq('status','pending').order('created_at',{ascending:false});
+  const box=document.getElementById('friendRequests'),count=document.getElementById('friendRequestCount'); if(error||!box)return;
+  if(count)count.textContent=(data||[]).length;
+  box.innerHTML=(data||[]).length?(data||[]).map(r=>'<div class="friend-request"><div><strong>'+escapeHtml(r.sender_name||'Student')+'</strong><span>@'+escapeHtml(r.sender_username||'')+'</span></div><div class="friend-request-actions"><button class="live-btn friend-accept" onclick="StudyQuestLive.respondRequest(\''+r.id+'\',\'accepted\')">Accept</button><button class="live-btn friend-decline" onclick="StudyQuestLive.respondRequest(\''+r.id+'\',\'declined\')">Decline</button></div></div>').join(''):'<div class="empty-roster">No pending requests.</div>';
+}
+async function respondFriendRequest(id,status){
+  if(!await sqConnect())return;
+  const me=sqCurrentUsername();
+  const {error}=await sqLive.from('sq_friend_requests').update({status:status}).eq('id',id).eq('receiver_username',me).eq('status','pending');
+  if(error)alert('Could not update request: '+error.message);else loadFriendRequests();
+}
+function startFriendFeatures(){
+  const input=document.getElementById('friendSearch');
+  if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter')sqSearchStudents(input.value)});
+  loadFriendRequests(); if(sqFriendTimer)clearInterval(sqFriendTimer); sqFriendTimer=setInterval(loadFriendRequests,10000);
+}
+window.addEventListener('DOMContentLoaded',startFriendFeatures);
