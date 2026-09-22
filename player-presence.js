@@ -11,7 +11,7 @@
   function safe(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
   function isOnline(lastSeen){return Date.now()-new Date(lastSeen).getTime()<ONLINE_WINDOW}
   async function connect(){if(typeof supabase==='undefined')return false;if(!client)client=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);return true}
-  async function touch(){if(client)await client.from('sq_presence').upsert({player_id:playerId(),player_name:playerName(),last_seen:new Date().toISOString()},{onConflict:'player_id'})}
+  async function touch(){if(client)await client.from('sq_presence').upsert({player_id:playerId(),player_username:currentUsername()||null,player_name:playerName(),last_seen:new Date().toISOString()},{onConflict:'player_id'})}
   async function sendRequest(username,btn){
     username=String(username||'').trim();const me=currentUsername();
     if(!username||!me||username.toLowerCase()===me.toLowerCase()){if(btn){btn.textContent='Not available';btn.disabled=true}return}
@@ -29,7 +29,7 @@
   }
   async function render(){
     if(!client)return;
-    const {data,error}=await client.from('sq_presence').select('player_id,player_name,last_seen').order('last_seen',{ascending:false});
+    const {data,error}=await client.from('sq_presence').select('player_id,player_username,player_name,last_seen').order('last_seen',{ascending:false});
     if(error)return;
     const onlineBox=document.getElementById('homeOnlinePlayers'),offlineBox=document.getElementById('homeOfflinePlayers');
     if(!onlineBox||!offlineBox)return;
@@ -38,8 +38,8 @@
     document.getElementById('homeOnlineCount').textContent=online.length;document.getElementById('homeOfflineCount').textContent=offline.length;
     const me=playerId();
     const card=(p,on)=>{
-      const username=String(p.player_id||'').trim();
-      const canRequest=p.player_id!==me&&currentUsername()&&username&&!username.startsWith('guest_');
+      const username=String(p.player_username||'').trim();
+      const canRequest=p.player_id!==me&&currentUsername()&&username;
       return `<div class="home-global-player ${on?'is-online':'is-offline'} ${p.player_id===me?'is-me':''}">
         <span class="home-player-dot"></span>
         <span class="home-player-info"><b>${safe(p.player_name||'Student')}${p.player_id===me?' <small>(You)</small>':''}</b><em>${safe(p.player_id||'')}</em></span>
