@@ -50,3 +50,27 @@ begin
 exception
   when duplicate_object then null;
 end $$;
+
+-- StudyQuest student search + friend requests
+create table if not exists public.sq_friend_requests (
+  id uuid primary key default gen_random_uuid(), sender_username text not null, sender_name text not null default 'Student', receiver_username text not null,
+  status text not null default 'pending' check (status in ('pending','accepted','declined')), created_at timestamptz not null default now(), unique(sender_username, receiver_username)
+);
+alter table public.sq_friend_requests enable row level security;
+drop policy if exists "friend requests read" on public.sq_friend_requests;
+drop policy if exists "friend requests insert" on public.sq_friend_requests;
+drop policy if exists "friend requests update" on public.sq_friend_requests;
+create policy "friend requests read" on public.sq_friend_requests for select using (true);
+create policy "friend requests insert" on public.sq_friend_requests for insert with check (true);
+create policy "friend requests update" on public.sq_friend_requests for update using (true) with check (true);
+grant select, insert, update on public.sq_friend_requests to anon, authenticated;
+create or replace function public.sq_find_students(p_query text)
+returns table(username text, quest_id text, student_name text)
+language sql security definer set search_path = public stable as $$
+  select p.username,p.quest_id,p.student_name from public.sq_student_profiles p
+  where length(trim(coalesce(p_query,''))) >= 2 and (lower(p.username) like '%'||lower(trim(p_query))||'%' or lower(p.quest_id) like '%'||lower(trim(p_query))||'%' or lower(p.student_name) like '%'||lower(trim(p_query))||'%')
+  order by p.username limit 20;
+$$;
+revoke all on function public.sq_find_students(text) from public;
+grant execute on function public.sq_find_students(text) to anon, authenticated;
+do $$ begin alter publication supabase_realtime add table public.sq_friend_requests; exception when duplicate_object then null; end $$;
