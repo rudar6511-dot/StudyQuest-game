@@ -8,7 +8,7 @@
   function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
   async function connect(){if(typeof supabase==='undefined'||!username())return false;if(!db)db=supabase.createClient(URL,KEY);return true}
   function box(){return document.getElementById('sqFriendMessages')}
-  function show(){const b=box();if(b)b.classList.add('show')}
+  function show(){const b=box();if(!b)return;b.classList.add('show');clearTimeout(b.__sqHideTimer);b.__sqHideTimer=setTimeout(()=>b.classList.remove('show'),10000)}
   async function load(){
     if(!await connect())return;
     const {data,error}=await db.from('sq_friend_requests').select('id,sender_username,sender_name,created_at').eq('receiver_username',username()).eq('status','pending').order('created_at',{ascending:false});
@@ -21,7 +21,7 @@
   async function respond(id,status){
     if(!await connect())return;
     const {error}=await db.from('sq_friend_requests').update({status}).eq('id',id).eq('receiver_username',username()).eq('status','pending');
-    if(error)alert('Could not update request: '+error.message);else load();
+    if(error)alert('Could not update request: '+error.message);else {load();}
   }
   async function start(){
     const b=box();if(!b)return;
