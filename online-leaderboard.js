@@ -34,7 +34,8 @@
     list.innerHTML=sorted.slice(0,50).map((r,i)=>{
       const d=missions(r.progress||{}), isMe=me.id&&String(r.player_id)===String(me.id);
       const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'🚀';
-      return `<div class="leader-row ${isMe?'me':''}"><strong>${i+1}</strong><span>${medal}</span><div><b>${esc(r.player_name||'Student')}</b><small>${d} missions · ${rank(d)}</small></div><em>${num(r.xp)} XP</em></div>`;
+      const safeId=esc(r.player_id||'unknown');
+      return `<div class="leader-row ${isMe?'me':''}"><strong>${i+1}</strong><span>${medal}</span><div><b>${esc(r.player_name||'Student')}</b><small>${d} missions · ${rank(d)}</small><button class="leader-player-id" type="button" data-player-id="${safeId}">ID: ${safeId}</button></div><em>${num(r.xp)} XP</em></div>`;
     }).join('');
   }
   async function loadOnline(){
@@ -43,13 +44,31 @@
     setStatus('Connecting to online leaderboard…',false);
     const {data,error}=await client.from('sq_student_progress').select('player_id,player_name,xp,coins,progress,updated_at').order('xp',{ascending:false}).limit(50);
     if(error){
+      window.__SQ_LEADER_ROWS=[];
       console.warn('StudyQuest online leaderboard:',error.message);
       setStatus('Online leaderboard unavailable — showing this browser\'s progress.',false);
       render([]); return;
     }
     setStatus(`Online leaderboard • ${data.length} player${data.length===1?'':'s'}`,true);
+    window.__SQ_LEADER_ROWS=data||[];
     render(data||[]);
   }
+  function openPlayer(r){
+    const d=missions(r.progress||{});
+    const box=document.getElementById('playerProfileModal');
+    if(!box)return;
+    box.innerHTML=`<div class="player-profile-card"><button class="player-profile-close" type="button" aria-label="Close">×</button><div class="eyebrow">👤 PLAYER LEADERBOARD</div><h2>${esc(r.player_name||'Student')}</h2><div class="player-profile-id">Player ID: <b>${esc(r.player_id||'')}</b></div><div class="player-profile-stats"><div><small>RANK</small><strong>${rank(d)}</strong></div><div><small>MISSIONS</small><strong>${d}</strong></div><div><small>XP</small><strong>${num(r.xp)}</strong></div><div><small>COINS</small><strong>${num(r.coins)}</strong></div></div><p>Only public game progress is shown. School, state, address and contact details are hidden.</p></div>`;
+    box.classList.add('show');
+    box.querySelector('.player-profile-close').onclick=()=>box.classList.remove('show');
+  }
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest('.leader-player-id');
+    if(!btn)return;
+    const id=btn.dataset.playerId;
+    const rows=window.__SQ_LEADER_ROWS||[];
+    const player=rows.find(x=>String(x.player_id)===String(id));
+    if(player)openPlayer(player);
+  });
   window.SQOnlineLeaderboard={refresh:loadOnline};
   document.addEventListener('DOMContentLoaded',()=>{
     render([]);
