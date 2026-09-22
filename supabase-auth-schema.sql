@@ -90,9 +90,11 @@ grant execute on function public.sq_get_username_by_quest_id(text) to anon, auth
 -- Stores only the game ID, display name and heartbeat time.
 create table if not exists public.sq_presence (
   player_id text primary key,
+  player_username text,
   player_name text not null default 'Student',
   last_seen timestamptz not null default now()
 );
+alter table public.sq_presence add column if not exists player_username text;
 
 alter table public.sq_presence enable row level security;
 
