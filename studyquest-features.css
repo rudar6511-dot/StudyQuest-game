@@ -1,0 +1,22 @@
+/* StudyQuest Feature Hub */
+.sq-feature-hub{margin:28px 0 10px;padding:26px;border:1px solid #ffffff12;border-radius:26px;background:linear-gradient(135deg,#ffffff08,#ffffff03);box-shadow:0 20px 60px #0004}
+.sq-feature-head{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:20px}
+.sq-feature-head h2{font-size:28px}.sq-feature-head p{color:#8e94aa;margin-top:5px;font-size:13px}
+.sq-feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.sq-tool{border:1px solid #ffffff10;background:#ffffff06;color:#fff;border-radius:18px;padding:18px;text-align:left;cursor:pointer;min-height:125px;transition:.25s}
+.sq-tool:hover{transform:translateY(-5px);border-color:#8170ff66;background:#ffffff0b}
+.sq-tool .sq-icon{font-size:28px;display:block;margin-bottom:10px}.sq-tool b{display:block}.sq-tool small{display:block;color:#858ba5;margin-top:5px;line-height:1.35}
+.sq-stat-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:14px}.sq-stat{background:#ffffff05;border:1px solid #ffffff0b;border-radius:14px;padding:12px;text-align:center}.sq-stat b{display:block;font-size:18px}.sq-stat small{color:#858ba5;font-size:9px}
+.sq-modal{position:fixed;inset:0;background:#02030bcc;backdrop-filter:blur(10px);z-index:100;display:none;place-items:center;padding:20px}.sq-modal.open{display:grid}
+.sq-modal-card{width:min(620px,100%);max-height:90vh;overflow:auto;background:#111528;border:1px solid #ffffff16;border-radius:25px;padding:28px;box-shadow:0 30px 100px #0009}
+.sq-modal-card h2{margin-bottom:8px}.sq-muted{color:#9096ad;font-size:13px;line-height:1.6}
+.sq-close{float:right;border:0;background:#ffffff0a;color:#fff;border-radius:10px;padding:8px 11px;cursor:pointer}
+.sq-timer{font-size:64px;text-align:center;font-weight:900;margin:20px 0;color:#aaa0ff}.sq-timer-controls{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.sq-flash{min-height:190px;display:grid;place-items:center;text-align:center;padding:25px;border-radius:20px;background:#ffffff06;border:1px solid #ffffff10;cursor:pointer;margin:18px 0}.sq-flash strong{font-size:25px}.sq-flash small{color:#8d93aa}
+.sq-goal{display:flex;gap:10px;align-items:center;margin:12px 0}.sq-goal progress{flex:1;height:9px}.sq-ach{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.sq-ach-item{padding:14px;border-radius:15px;background:#ffffff05;border:1px solid #ffffff0d}.sq-ach-item.locked{opacity:.45}.sq-ach-item b{display:block;margin-top:5px}.sq-ach-item small{color:#8a90a7}
+.sq-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px;background:#ffffff05;border-radius:14px;margin:9px 0}.sq-toggle button{border:1px solid #ffffff15;background:#ffffff08;color:#fff;border-radius:10px;padding:7px 12px;cursor:pointer}
+.sq-toast{position:fixed;right:20px;bottom:20px;z-index:150;background:#171b30;border:1px solid #ffffff15;color:#fff;padding:13px 17px;border-radius:13px;box-shadow:0 15px 40px #0008;animation:screenIn .25s ease}
+body.sq-focus-mode .topbar,body.sq-focus-mode footer,body.sq-focus-mode .sq-feature-hub,body.sq-focus-mode .home-player-roster{display:none!important}
+body.sq-focus-mode{background:#05060c}
+@media(max-width:950px){.sq-feature-grid{grid-template-columns:repeat(2,1fr)}.sq-stat-strip{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.sq-feature-grid{grid-template-columns:1fr}.sq-stat-strip{grid-template-columns:repeat(2,1fr)}.sq-ach{grid-template-columns:1fr}.sq-feature-head{align-items:flex-start;flex-direction:column}}
