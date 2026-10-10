@@ -7,7 +7,29 @@ const chars=[
 {id:'professor',name:'Professor',title:'Brain Boss',price:500,emoji:'🧑‍🏫',className:'c-professor',desc:'Master of subjects'},
 {id:'inventor',name:'Inventor',title:'Idea Genius',price:750,emoji:'💡',className:'c-inventor',desc:'Creates clever ideas'},
 {id:'champion',name:'Champion',title:'Quest Master',price:1000,emoji:'🦸‍♂️',className:'c-champion',desc:'Elite quest character'},
-{id:'legend',name:'Legend',title:'Ultimate Genius',price:1500,emoji:'🧠',className:'c-legend',desc:'Legendary learning avatar'}
+{id:'legend',name:'Legend',title:'Ultimate Genius',price:1500,emoji:'🧠',className:'c-legend',desc:'Legendary learning avatar'},
+{id:'astronaut',name:'Astronaut',title:'Space Voyager',price:180,emoji:'👨‍🚀',className:'c-astronaut',desc:'Explore the learning universe'},
+{id:'robot',name:'Robo Buddy',title:'Tech Companion',price:220,emoji:'🤖',className:'c-robot',desc:'A friendly futuristic helper'},
+{id:'ninja',name:'Ninja',title:'Focus Ninja',price:260,emoji:'🥷',className:'c-ninja',desc:'Quick thinking and sharp focus'},
+{id:'wizard',name:'Wizard',title:'Magic of Knowledge',price:320,emoji:'🧙',className:'c-wizard',desc:'Turns tough questions into quests'},
+{id:'detective',name:'Detective',title:'Mystery Solver',price:280,emoji:'🕵️',className:'c-detective',desc:'Find clues in every question'},
+{id:'artist',name:'Artist',title:'Creative Spark',price:240,emoji:'👩‍🎨',className:'c-artist',desc:'Imagination meets learning'},
+{id:'doctor',name:'Doctor',title:'Health Hero',price:380,emoji:'🧑‍⚕️',className:'c-doctor',desc:'Curious about the human body'},
+{id:'pilot',name:'Pilot',title:'Sky Captain',price:420,emoji:'🧑‍✈️',className:'c-pilot',desc:'Fly toward your next achievement'},
+{id:'chef',name:'Chef',title:'Recipe Scientist',price:200,emoji:'🧑‍🍳',className:'c-chef',desc:'Mix ideas and discover answers'},
+{id:'athlete',name:'Athlete',title:'Energy Champion',price:300,emoji:'🏃',className:'c-athlete',desc:'Keep moving toward your goals'},
+{id:'musicstar',name:'Music Star',title:'Rhythm Master',price:340,emoji:'🎤',className:'c-musicstar',desc:'Keep your learning rhythm'},
+{id:'dragon',name:'Dragon Guardian',title:'Fantasy Protector',price:650,emoji:'🐉',className:'c-dragon',desc:'Guard your streak and XP'},
+{id:'fox',name:'Clever Fox',title:'Quick Thinker',price:390,emoji:'🦊',className:'c-fox',desc:'Smart strategies for every level'},
+{id:'panda',name:'Panda Pal',title:'Calm Learner',price:250,emoji:'🐼',className:'c-panda',desc:'Stay calm and solve step by step'},
+{id:'cat',name:'Cosmic Cat',title:'Star Pouncer',price:360,emoji:'🐱',className:'c-cat',desc:'Leap into a new learning world'},
+{id:'penguin',name:'Penguin Explorer',title:'Cool Discoverer',price:330,emoji:'🐧',className:'c-penguin',desc:'Cool head, clever answers'},
+{id:'alien',name:'Alien Scholar',title:'Galaxy Genius',price:700,emoji:'👽',className:'c-alien',desc:'Knowledge from another world'},
+{id:'knight',name:'Quest Knight',title:'Brave Learner',price:550,emoji:'🛡️',className:'c-knight',desc:'Face each mission with courage'},
+{id:'phoenix',name:'Phoenix',title:'Rise Again',price:850,emoji:'🔥',className:'c-phoenix',desc:'Learn from mistakes and try again'},
+{id:'rainbow',name:'Rainbow Hero',title:'Color Burst',price:500,emoji:'🌈',className:'c-rainbow',desc:'Bring color to every quest'},
+{id:'dino',name:'Dino Buddy',title:'Prehistoric Brain',price:410,emoji:'🦖',className:'c-dino',desc:'A mighty friend for big questions'},
+{id:'bee',name:'Bee Genius',title:'Busy Learner',price:290,emoji:'🐝',className:'c-bee',desc:'Small steps make big progress'}
 ];
 function owned(){try{return JSON.parse(localStorage.getItem(OWN)||'["scholar"]')}catch(e){return['scholar']}}
 function selected(){return localStorage.getItem(KEY)||'scholar'}
