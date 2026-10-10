@@ -37,6 +37,10 @@ async function askGemini(
             parts: [{ text: prompt }],
           },
         ],
+        generationConfig: {
+          maxOutputTokens: 700,
+          thinkingConfig: { thinkingLevel: "low" },
+        },
       }),
     },
   );
@@ -134,63 +138,22 @@ Student's question:
 ${question}
 `;
 
-    // Try the latest model first, then automatically fall back
-    // if Google reports temporary overload/rate-limit/server errors.
-    const models = [
-      "gemini-3.8-flash",
-      "gemini-3.7-flash",
-      "gemini-3.6-flash",
-      "gemini-3.5-flash-lite",
-    ];
+    // Use one fast model first; sequential fallback models caused long waits.
+    const model = "gemini-3.8-flash";
+    let result = await askGemini(key, model, prompt);
 
-    let lastError = "Gemini AI is temporarily unavailable.";
-
-    for (const model of models) {
-      // Give the primary model one quick retry.
-      const attempts = model === "gemini-3.8-flash" ? 2 : 1;
-
-      for (let attempt = 0; attempt < attempts; attempt++) {
-        const result = await askGemini(key, model, prompt);
-
-        if (result.ok) {
-          return json({
-            answer: result.answer,
-            model,
-          });
-        }
-
-        const providerMessage =
-          result.data?.error?.message ||
-          result.data?.error?.status ||
-          `HTTP ${result.status}`;
-
-        lastError = providerMessage;
-        console.error(
-          `Gemini ${model} attempt ${attempt + 1} failed:`,
-          result.data,
-        );
-
-        // Retry only temporary overload/rate-limit/server failures.
-        const temporary =
-          result.status === 429 ||
-          result.status === 500 ||
-          result.status === 502 ||
-          result.status === 503 ||
-          result.status === 504 ||
-          /high demand|overload|temporar|rate.?limit/i.test(
-            providerMessage,
-          );
-
-        if (!temporary) {
-          break;
-        }
-
-        if (attempt < attempts - 1) {
-          await sleep(1200);
-        }
+    if (!result.ok) {
+      const providerMessage = result.data?.error?.message || result.data?.error?.status || ("HTTP " + result.status);
+      console.error("Gemini " + model + " failed:", result.data);
+      const temporary = result.status === 429 || result.status === 500 || result.status === 502 || result.status === 503 || result.status === 504 || /high demand|overload|temporar|rate.?limit/i.test(providerMessage);
+      if (temporary) {
+        await sleep(700);
+        result = await askGemini(key, model, prompt);
       }
     }
 
+    if (result.ok) return json({ answer: result.answer, model });
+    const lastError = result.data?.error?.message || result.data?.error?.status || ("HTTP " + result.status);
     return json(
       {
         error:
