@@ -32,7 +32,20 @@ math: {
 "Math Champion":[["Solve 2x + 5 = 15.",["4","5","6","10"],1],["If a:b=2:3 and a=8, b=?",["10","12","16","24"],1],["Area of triangle base 8, height 5?",["13","20","40","80"],1],["Simple interest on ₹1000 at 5% for 1 year?",["₹5","₹25","₹50","₹100"],2],["If 3x + 2 = 17, x=?",["3","4","5","6"],2]]
 }
 };
-const qs=(s,l)=>{const topic=(topics[s]||[])[l-1];const specific=topicBanks[s]?.[topic];if(specific)return specific.map(q=>({q:q[0],a:q[1],c:q[2]}));const pool=data[s]||[];const start=((l-1)*5)%pool.length;return Array.from({length:5},(_,n)=>{const q=pool[(start+n)%pool.length];return {q:q[0],a:q[1],c:q[2]}})};
+const qs=(s,l)=>{
+ const topic=(topics[s]||[])[l-1]||'Practice';
+ const specific=topicBanks[s]?.[topic];
+ // The renderer expects each question as [prompt, options, correctIndex].
+ if(specific)return specific.map(q=>Array.isArray(q)?q:[q.q,q.a,q.c]);
+ const pool=data[s]||[];
+ if(!pool.length)return [];
+ // Keep each level's five questions together and avoid duplicates within a level.
+ // Rotate through the subject pool in topic-sized batches where possible.
+ const start=((l-1)*5)%pool.length;
+ const chosen=[];
+ for(let n=0;n<Math.min(5,pool.length);n++) chosen.push(pool[(start+n)%pool.length]);
+ return chosen;
+};
 function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const e=$(id);if(e)e.classList.add('active');window.scrollTo(0,0)}
 function openLevels(s){S=s;const g=$('levelGrid');if(!g||!data[s])return;const u=progress(s);$('worldEyebrow').textContent=subjects[s].toUpperCase()+' • MISSION MAP';g.innerHTML='';for(let n=1;n<=20;n++){const b=document.createElement('button');b.type='button';b.className='level-card '+(n===u?'current ':'')+(n<u?'done ':'')+(n>u?'locked-level':'');b.disabled=n>u;b.innerHTML='<span class="level-number">'+(n<u?'✓':n)+'</span><span><b>Level '+n+'</b><small>'+topics[s][n-1]+'</small></span><em>'+(n<u?'COMPLETED':n===u?'PLAY NOW':'🔒 LOCKED')+'</em>';if(n<=u)b.onclick=()=>startQuiz(s,n);g.appendChild(b)}show('levels')}
 function startQuiz(s,l){clearInterval(timer);S=s;L=l;i=0;score=0;lives=3;show('quiz');$('quizAvatar').textContent=icons[s];$('quizSubject').textContent=subjects[s].toUpperCase()+' • '+topics[s][l-1].toUpperCase();$('levelChip').textContent='LEVEL '+l+' • '+topics[s][l-1];render()}
