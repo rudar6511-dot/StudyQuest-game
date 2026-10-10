@@ -39,5 +39,29 @@ function startQuiz(s,l){clearInterval(timer);S=s;L=l;i=0;score=0;lives=3;show('q
 function render(){const list=qs(S,L),q=list[i];if(!q){finish();return}$('question').textContent=q[0];$('questionCount').textContent=(i+1)+' / 5';$('progressBar').style.width=((i+1)/5*100)+'%';$('lives').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);$('feedback').textContent='';const box=$('answers');box.innerHTML='';q[1].forEach((text,n)=>{const b=document.createElement('button');b.type='button';b.className='answer';b.textContent=text;b.onclick=()=>answer(n,b);box.appendChild(b)});clearInterval(timer);time=20;$('timer').textContent='⏱ '+time;timer=setInterval(()=>{time--;$('timer').textContent='⏱ '+time;if(time<=0)answer(-1,null,true)},1000)}
 function answer(choice,button,timeout){clearInterval(timer);const q=qs(S,L)[i];document.querySelectorAll('#answers .answer').forEach((b,n)=>{b.disabled=true;if(n===q[2])b.classList.add('correct')});if(choice===q[2]){$('feedback').textContent='✨ Correct! +20 points';$('feedback').style.color='#55dda2';score+=20}else{lives--;if(button)button.classList.add('wrong');$('feedback').textContent=timeout?'⏰ Time up!':'💡 Not quite — keep learning!';$('feedback').style.color='#ff7887'}setTimeout(()=>{if(lives<=0||i>=4)finish();else{i++;render()}},650)}
 function finish(){clearInterval(timer);const passed=score>=60,old=progress(S);if(passed&&L===old&&L<20)localStorage.setItem('sqProgress_'+S,String(L+1));let xp=Number(localStorage.getItem('sqXp')||0),coins=Number(localStorage.getItem('sqCoins')||0),gain=passed?Math.round(score*1.5)+25:Math.round(score*.5),coin=passed?Math.max(5,Math.floor(score/10)):2;localStorage.setItem('sqXp',xp+gain);localStorage.setItem('sqCoins',coins+coin);if($('xp'))$('xp').textContent=xp+gain;if($('coins'))$('coins').textContent=coins+coin;if($('level'))$('level').textContent=Math.floor((xp+gain)/100)+1;$('finalScore').textContent=score;$('finalXp').textContent='+'+gain;$('finalCoins').textContent='+'+coin;$('resultTitle').textContent=passed?'⭐ Level Complete!':'🔁 Try Again!';$('resultText').textContent=passed?'Level '+L+' completed. The next level is now unlocked!':'You need 60 points to unlock the next level. Retry Level '+L+'.';$('nextButton').textContent=passed&&L<20?'Next Level →':'Retry Level';$('nextButton').onclick=()=>passed&&L<20?startQuiz(S,L+1):startQuiz(S,L);show('result')}
-window.openLevels=openLevels;window.startQuiz=startQuiz;window.StudyQuestQuiz={openLevels,start:startQuiz};
+
+const championshipMath = [
+{q:"Find all real x satisfying sqrt(x+6)+sqrt(10-x)=4.",a:["x=−6 or 10","x=−2 or 6","x=2 only","No real solution"],c:1},
+{q:"If a+b=7 and a²+b²=29, find ab.",a:["10","12","14","18"],c:0},
+{q:"A positive integer n leaves remainder 2 when divided by 5 and remainder 3 when divided by 7. What is the smallest such n?",a:["17","23","27","32"],c:1},
+{q:"Solve: (x−1)(x−2)(x−3)=24 for real x.",a:["x=4 only","x=−1 only","x=4 or −2","x=1,2,3"],c:0},
+{q:"The sides of a triangle are 13, 14 and 15. What is its area?",a:["72","84","90","96"],c:1},
+{q:"If x+1/x=3, find x²+1/x².",a:["5","7","9","11"],c:1},
+{q:"A two-digit number is 4 times the sum of its digits. Reversing its digits increases it by 18. Find the number.",a:["24","36","42","48"],c:0},
+{q:"How many integers from 1 to 1000 are divisible by 3 or 5, but not both?",a:["400","401","467","534"],c:1},
+{q:"If the roots of x²−px+12=0 differ by 1, what are the possible values of p?",a:["±5","±7","±√26","±√48"],c:1},
+{q:"A square and a circle have equal perimeters. If the square's side is 11, what is the circle's radius?",a:["22/π","11/π","44/π","7/π"],c:0},
+{q:"Find the least positive integer that is a perfect square and has exactly 15 positive divisors.",a:["144","196","256","225"],c:3},
+{q:"If 2^x=8^y and xy=6, find x+y for positive x,y.",a:["5","6","7","9"],c:1},
+{q:"A sequence has a₁=2 and aₙ₊₁=2aₙ+1. Find a₅.",a:["31","32","47","63"],c:2},
+{q:"A box contains 4 red, 5 blue and 6 green balls. Two are drawn without replacement. Probability they are the same colour?",a:["31/105","1/3","2/7","4/15"],c:0},
+{q:"For positive x,y with x+y=10, what is the maximum value of xy?",a:["20","24","25","50"],c:2},
+{q:"A right triangle has integer sides and hypotenuse 25. Which pair can be its legs?",a:["7 and 24","10 and 20","12 and 20","15 and 18"],c:0},
+{q:"If 1+2+...+n=210, find n.",a:["19","20","21","22"],c:1},
+{q:"A number is chosen from 1 to 120. What is the probability it is divisible by 4 or 6?",a:["1/3","2/5","1/2","7/12"],c:1},
+{q:"If x²+y²=50 and xy=7, find (x+y)².",a:["36","50","64","78"],c:2},
+{q:"A rectangle has perimeter 50 and integer side lengths. What is the greatest possible area?",a:["144","150","156","169"],c:1}
+];
+
+window.openLevels=openLevels;window.startQuiz=startQuiz;window.StudyQuestQuiz={openLevels,start:startQuiz,championshipMath};
 })();
