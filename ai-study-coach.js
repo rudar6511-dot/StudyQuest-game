@@ -39,7 +39,8 @@
         '<button class="sq-ai-close" onclick="sqAiClose()">✕</button>'+
         '<div class="sq-ai-title"><span class="sq-ai-bot">🤖</span><div><div class="eyebrow">STUDYQUEST AI</div><h2>AI Study Coach</h2><p>Understand the question — don’t just copy an answer.</p></div></div>'+
         '<div class="sq-ai-modes"><button data-mode="hint" onclick="sqAiMode(\'hint\')">💡 Hint</button><button data-mode="explain" onclick="sqAiMode(\'explain\')">🧠 Explain</button><button data-mode="solve" onclick="sqAiMode(\'solve\')">✅ Solve</button></div>'+
-        '<textarea id="sqAiInput" rows="4" placeholder="Type or paste your question here..."></textarea>'+
+        '<textarea id="sqAiInput" rows="4" placeholder="Type or paste your question here..."></textarea>'+ 
+        '<div class="sq-ai-speech-row"><button type="button" id="sqAiMic" class="sq-ai-mic" onclick="sqAiToggleSpeech()">🎙️ Speak your question</button><span id="sqAiSpeechStatus" aria-live="polite">Hindi and English voice input (browser support required)</span></div>'+ 
         '<div class="sq-ai-actions"><button class="ghost" onclick="sqAiUseCurrent()">Use current quiz question</button><button class="primary" onclick="sqAiAsk()">Ask AI →</button></div>'+
         '<div id="sqAiStatus" class="sq-ai-status"></div><div id="sqAiAnswer" class="sq-ai-answer"></div>'+
         '</div>';
@@ -50,6 +51,30 @@
     window._sqAiMode=mode;
     sqAiMode(mode);
   }
+  let sqSpeechRecognition=null;
+  let sqSpeechActive=false;
+  window.sqAiToggleSpeech=()=>{
+    const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const status=$('sqAiSpeechStatus');
+    const button=$('sqAiMic');
+    if(!SpeechRecognition){if(status)status.textContent='Voice typing is not supported in this browser. Try Chrome or Edge.';return;}
+    if(sqSpeechActive&&sqSpeechRecognition){sqSpeechRecognition.stop();return;}
+    sqSpeechRecognition=new SpeechRecognition();
+    sqSpeechRecognition.lang='hi-IN';
+    sqSpeechRecognition.continuous=false;
+    sqSpeechRecognition.interimResults=true;
+    sqSpeechRecognition.onstart=()=>{sqSpeechActive=true;if(button){button.textContent='⏹️ Stop listening';button.classList.add('listening');}if(status)status.textContent='Listening… speak now. For English, you can switch browser language settings if needed.';};
+    sqSpeechRecognition.onresult=(event)=>{
+      let finalText='';let interimText='';
+      for(let i=event.resultIndex;i<event.results.length;i++){const spoken=event.results[i][0].transcript;if(event.results[i].isFinal)finalText+=spoken;else interimText+=spoken;}
+      const input=$('sqAiInput');if(input){const base=input.dataset.speechBase||'';input.value=(base+(base&&finalText?' ':'')+finalText+interimText).trim();}
+      if(status)status.textContent=finalText?'Voice captured. You can edit it or tap Ask AI.':'Listening…';
+    };
+    sqSpeechRecognition.onerror=(event)=>{if(status)status.textContent=event.error==='not-allowed'?'Microphone permission denied. Allow microphone access in your browser.':'Voice input error: '+event.error;};
+    sqSpeechRecognition.onend=()=>{sqSpeechActive=false;if(button){button.textContent='🎙️ Speak your question';button.classList.remove('listening');}const input=$('sqAiInput');if(input)delete input.dataset.speechBase;if(status&&status.textContent==='Listening…')status.textContent='Stopped listening. You can edit your question now.';};
+    const input=$('sqAiInput');if(input)input.dataset.speechBase=input.value.trim();
+    try{sqSpeechRecognition.start();}catch(e){if(status)status.textContent='Could not start microphone. Please try again.';}
+  };
   window.sqAiClose=()=>{const m=$('sqAiModal');if(m)m.classList.remove('open')};
   window.sqAiMode=mode=>{
     window._sqAiMode=mode;
