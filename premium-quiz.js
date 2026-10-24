@@ -9,7 +9,7 @@ nebula:{label:'WORLD 01 · NEBULA ACADEMY',qs:[
 {en:'Find the odd one out: 8, 27, 64, 100, 125.',hi:'अलग संख्या चुनिए: 8, 27, 64, 100, 125।',o:[['8','8'],['64','64'],['100','100'],['125','125']],a:2,why:'The others are cubes: 2³, 3³, 4³ and 5³. 100 is not a perfect cube.'}
 ]},
 crystal:{label:'WORLD 02 · CRYSTAL CITADEL',qs:[
-{en:'If x + 1/x = 5, find x² + 1/x².',hi:'यदि x + 1/x = 5, तो x² + 1/x² ज्ञात कीजिए।',o:[['10','10'],['21','21'],['23','23'],['25','25']],a:1,why:'Square both sides: x² + 2 + 1/x² = 25, so the answer is 23.',fix:'Correct calculation: 25 − 2 = 23. / सही गणना: 25 − 2 = 23.'},
+{en:'If x + 1/x = 5, find x² + 1/x².',hi:'यदि x + 1/x = 5, तो x² + 1/x² ज्ञात कीजिए।',o:[['10','10'],['21','21'],['23','23'],['25','25']],a:2,why:'Square both sides: x² + 2 + 1/x² = 25, so x² + 1/x² = 23. / दोनों ओर वर्ग करने पर उत्तर 23 है।'},
 {en:'A triangle has sides 13 cm, 14 cm and 15 cm. What is its area?',hi:'एक त्रिभुज की भुजाएँ 13 सेमी, 14 सेमी और 15 सेमी हैं। क्षेत्रफल क्या है?',o:[['72 cm²','72 वर्ग सेमी'],['84 cm²','84 वर्ग सेमी'],['90 cm²','90 वर्ग सेमी'],['96 cm²','96 वर्ग सेमी']],a:1,why:'Heron’s formula: s=21; area = √(21×8×7×6)=84 cm².'},
 {en:'A 2 Ω resistor is connected across 12 V. What current flows?',hi:'12 V से 2 Ω प्रतिरोध जोड़ा गया है। धारा कितनी होगी?',o:[['2 A','2 A'],['4 A','4 A'],['6 A','6 A'],['24 A','24 A']],a:2,why:'Ohm’s law: I = V/R = 12/2 = 6 A.'},
 {en:'Which number is prime?',hi:'इनमें से कौन-सी संख्या अभाज्य है?',o:[['91','91'],['93','93'],['97','97'],['99','99']],a:2,why:'97 has no positive divisors other than 1 and 97.'},
