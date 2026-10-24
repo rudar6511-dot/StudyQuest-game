@@ -22,6 +22,34 @@ cosmic:{label:'WORLD 03 · COSMIC CHAMPIONSHIP',qs:[
 {en:'Which Indian constitutional body conducts elections to Parliament and State Legislatures?',hi:'भारत में संसद और राज्य विधानसभाओं के चुनाव कौन-सा संवैधानिक निकाय कराता है?',o:[['Supreme Court','सर्वोच्च न्यायालय'],['Election Commission of India','भारत निर्वाचन आयोग'],['Finance Commission','वित्त आयोग'],['NITI Aayog','नीति आयोग']],a:1,why:'The Election Commission of India supervises and conducts these elections.'},
 {en:'Choose the correct completion: If I had studied, I ___ the test.',hi:'सही विकल्प चुनें: If I had studied, I ___ the test.',o:[['will pass','will pass'],['would pass','would pass'],['would have passed','would have passed'],['passed','passed']],a:2,why:'This is a third conditional: If + past perfect, would have + past participle.'}
 ]}};
+// Expand each Premium World to 50 questions with varied, automatically generated practice items.
+function addPracticeQuestions(id){
+ const bank=worlds[id].qs;
+ for(let k=bank.length;k<50;k++){
+  let a,b,ans,en,hi,why;
+  if(id==='nebula'){
+   a=3+(k*7)%29;b=2+(k*5)%17;ans=a+b;
+   en='Logic warm-up: If you have '+a+' energy points and earn '+b+' more, how many points do you have?';
+   hi='तर्क अभ्यास: आपके पास '+a+' ऊर्जा अंक हैं और '+b+' और मिलते हैं। कुल कितने अंक होंगे?';
+   why='Add the two amounts: '+a+' + '+b+' = '+ans+'.';
+  }else if(id==='crystal'){
+   a=4+(k*3)%36;b=2+(k*7)%19;ans=a*b;
+   en='Math challenge: Calculate '+a+' × '+b+'.';
+   hi='गणित चुनौती: '+a+' × '+b+' की गणना कीजिए।';
+   why=a+' × '+b+' = '+ans+'.';
+  }else{
+   a=20+(k*11)%81;b=2+(k*3)%12;ans=a-b;
+   en='Championship challenge: A team scores '+a+' points and loses '+b+' points in penalties. What is the final score?';
+   hi='चैंपियनशिप चुनौती: टीम के '+a+' अंक हैं और पेनल्टी में '+b+' अंक घटते हैं। अंतिम अंक कितने हैं?';
+   why=a+' − '+b+' = '+ans+'.';
+  }
+  const opts=[ans,ans+2,Math.max(0,ans-3),ans+5];
+  const shift=k%4,arr=opts.slice(shift).concat(opts.slice(0,shift));
+  const correct=arr.indexOf(ans);
+  bank.push({en,hi,o:arr.map(v=>[String(v),String(v)]),a:correct,why});
+ }
+}
+Object.keys(worlds).forEach(addPracticeQuestions);
 let world='nebula',index=0,score=0,answered=false,lang='en',running=false,timerId=null,timeLeft=30;
 function premiumActive(){try{const p=JSON.parse(localStorage.getItem('sqPremiumDemoV1')||'null');return !!(p&&Number(p.expiresAt)>Date.now())}catch(e){return false}}
 function stopTimer(){if(timerId!==null){clearInterval(timerId);timerId=null;}}
