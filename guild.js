@@ -144,7 +144,7 @@ function makeQuestions(seed){
 
 const subjectsSafe=['Maths','Science','English','Reasoning'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const $=id=>document.getElementById(id);
+
 let sb=null,currentUser=null,cloudGuilds=[],testGuild=null;
 function notice(msg,kind=''){const n=$('notice');n.className='notice '+kind;n.textContent=msg}
 function cfg(){return window.SQ_GUILD_SUPABASE_URL&&window.SQ_GUILD_SUPABASE_ANON_KEY&&!window.SQ_GUILD_SUPABASE_ANON_KEY.includes('PASTE_')}
