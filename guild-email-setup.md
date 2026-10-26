@@ -21,8 +21,8 @@ The function itself requires a valid Supabase Auth bearer token for all actions 
 ## Run SQL
 Run `guild-setup.sql` in Supabase Dashboard → SQL Editor. It creates tables for guilds, questions, applications, members, and one-time review tokens. RLS is enabled and direct browser table access is revoked; the Edge Function uses the service-role key on the server.
 
-## Important integration status
-The current `guild.html`/ `guild.js` page still contains its earlier localStorage demo workflow. It asks for the emails but does not yet call this Edge Function for creating guilds or submitting applications. The existing site login also stores a local browser flag; that is not a verified Supabase Auth session. Therefore, running SQL alone will not activate the full workflow. The UI must be connected to Supabase Auth and the `guild-email` actions before real Gmail delivery works.
+## Frontend configuration
+The Guild Hall now uses Supabase Auth magic links and calls the `guild-email` Edge Function. Edit `guild-config.js` and replace `PASTE_YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY_HERE` with the project's public publishable/anon key. Never put the service-role key in this file. In Supabase Dashboard → Authentication → URL Configuration, add your deployed Guild Hall URL to Site URL/Redirect URLs (for GitHub Pages, include the full `.../guild.html` URL). The user must click the magic link in the same browser where the Guild Hall is open.
 
 ## Email review behavior
 On application submission the function grades the 20 answers on the server, stores the score, and sends the admin an email with the score plus Accept/Reject links. Links are random, hashed in the database, expire after seven days, and are single-use. Acceptance inserts the user into the guild membership table. Configure a verified sender domain in Resend before testing real delivery.
