@@ -55,3 +55,11 @@ alter table public.sq_guild_review_tokens enable row level security;
 -- Edge Function is the only data access layer; never put service-role key in browser.
 revoke all on public.sq_guilds, public.sq_guild_questions, public.sq_guild_applications, public.sq_guild_members, public.sq_guild_review_tokens from anon, authenticated;
 grant usage on schema public to authenticated;
+
+-- Upgrade an existing earlier demo schema without dropping data.
+alter table public.sq_guilds add column if not exists admin_email text;
+alter table public.sq_guild_applications add column if not exists applicant_name text;
+alter table public.sq_guild_applications add column if not exists applicant_email text;
+alter table public.sq_guild_applications add column if not exists reviewed_at timestamptz;
+-- Existing rows from the older demo schema cannot be linked to verified Supabase users;
+-- migrate/clear those rows manually before relying on this system.
