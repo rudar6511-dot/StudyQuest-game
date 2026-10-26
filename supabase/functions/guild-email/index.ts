@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     if (userError || !user) return json({ error: "Your session is invalid or expired. Please sign in again." }, 401);
 
     if (action === "listGuilds") {
-      const { data, error } = await adminDb.from("sq_guilds").select("id,name,description,admin_email,created_at").order("created_at", { ascending: false });
+      const { data, error } = await adminDb.from("sq_guilds").select("id,name,description,admin_id,admin_email,created_at").order("created_at", { ascending: false });
       if (error) throw error;
       return json({ guilds: data || [] });
     }
@@ -164,9 +164,14 @@ Deno.serve(async (req) => {
     }
 
     if (action === "myApplications") {
-      const { data, error } = await adminDb.from("sq_guild_applications")
-        .select("id,guild_id,applicant_id,applicant_name,applicant_email,score,status,submitted_at,reviewed_at,sq_guilds(name)")
-        .or("applicant_id.eq." + user.id + ",guild_id.in.(" + (await adminDb.from("sq_guilds").select("id").eq("admin_id", user.id)).data?.map((g: any) => g.id).join(",") + ")");
+      const { data: ownedGuilds, error: ownedError } = await adminDb.from("sq_guilds").select("id").eq("admin_id", user.id);
+      if (ownedError) throw ownedError;
+      const ownedIds = (ownedGuilds || []).map((g: any) => g.id);
+      let query = adminDb.from("sq_guild_applications")
+        .select("id,guild_id,applicant_id,applicant_name,applicant_email,score,status,submitted_at,reviewed_at,sq_guilds(name)");
+      if (ownedIds.length) query = query.or("applicant_id.eq." + user.id + ",guild_id.in.(" + ownedIds.join(",") + ")");
+      else query = query.eq("applicant_id", user.id);
+      const { data, error } = await query.order("submitted_at", { ascending: false });
       if (error) throw error;
       return json({ applications: data || [] });
     }
