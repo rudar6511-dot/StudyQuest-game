@@ -142,19 +142,75 @@ function makeQuestions(seed){
  return out;
 }
 
-const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{guilds:[],applications:[]}}catch{return{guilds:[],applications:[]}}};
-const save=d=>localStorage.setItem(KEY,JSON.stringify(d));
+const subjectsSafe=['Maths','Science','English','Reasoning'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function notice(msg,kind=''){ $('notice').className='notice '+kind;$('notice').textContent=msg }
-function render(){const d=read(),term=$('searchGuild').value.trim().toLowerCase();const guilds=d.guilds.filter(g=>g.name.toLowerCase().includes(term));$('guildList').innerHTML=guilds.length?guilds.map(g=>{const apps=d.applications.filter(a=>a.guildId===g.id&&a.status==='accepted');const avg=apps.length?Math.round(apps.reduce((s,a)=>s+a.score,0)/apps.length):0;const accuracy=apps.length?Math.round(apps.reduce((s,a)=>s+a.score,0)/(apps.length*20)*100):0;return '<article class="guild-card"><h3>'+esc(g.name)+'</h3><p>'+esc(g.description||'A StudyQuest learning guild')+'</p><div class="stats"><span class="pill">👥 '+(apps.length+1)+' members</span><span class="pill">⭐ Avg score '+avg+'/20</span><span class="pill">🎯 Avg accuracy '+accuracy+'%</span></div><p>Admin: '+esc(g.creator)+'</p><button data-apply="'+g.id+'">Take entrance test</button></article>'}).join(''):'<p>No guilds found yet. Create the first one!</p>';
-$('adminGuild').innerHTML='<option value="">Choose your guild</option>'+d.guilds.map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');
-$('myApplications').innerHTML=d.applications.length?d.applications.slice().reverse().map(a=>'<p><b>'+esc((d.guilds.find(g=>g.id===a.guildId)||{}).name||'Deleted guild')+'</b> — '+esc(a.applicant)+' — score '+a.score+'/20 — <b>'+esc(a.status)+'</b>'+(a.status==='pending'?' <button data-review="'+a.id+'" data-decision="accepted">Accept</button> <button data-review="'+a.id+'" data-decision="rejected">Reject</button>':'')+'</p>').join(''):'No applications yet.';
-$('guildList').querySelectorAll('[data-apply]').forEach(b=>b.onclick=()=>apply(b.dataset.apply));$('myApplications').querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>review(b.dataset.review,b.dataset.decision));
+const $=id=>document.getElementById(id);
+let sb=null,currentUser=null,cloudGuilds=[],testGuild=null;
+function notice(msg,kind=''){const n=$('notice');n.className='notice '+kind;n.textContent=msg}
+function cfg(){return window.SQ_GUILD_SUPABASE_URL&&window.SQ_GUILD_SUPABASE_ANON_KEY&&!window.SQ_GUILD_SUPABASE_ANON_KEY.includes('PASTE_')}
+function init(){
+ if(!cfg()){notice('Setup needed: add your Supabase publishable/anon key in guild-config.js.','error');return}
+ sb=window.supabase.createClient(window.SQ_GUILD_SUPABASE_URL,window.SQ_GUILD_SUPABASE_ANON_KEY);
+ sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;renderAuth();if(currentUser)loadGuilds();});
+ sb.auth.getSession().then(({data})=>{currentUser=data.session?.user||null;renderAuth();if(currentUser)loadGuilds();else notice('Sign in with your Gmail to create guilds or take an entrance test.')});
 }
-function renderEditor(){const id=$('adminGuild').value,g=read().guilds.find(x=>x.id===id);$('questionEditor').innerHTML='';if(!g)return;for(let i=0;i<20;i++){const subject=subjects[Math.floor(i/5)];const box=document.createElement('div');box.className='question-row';const saved=(g.questions||[])[i]||{};box.innerHTML='<strong>Q'+(i+1)+' · '+subject+'</strong><input data-q="'+i+'" placeholder="Write question '+(i+1)+'" maxlength="240" value="'+esc(saved.q||'')+'"><div class="options">'+[0,1,2,3].map((n)=>'<input data-opt="'+i+'-'+n+'" placeholder="Option '+String.fromCharCode(65+n)+'" maxlength="120" value="'+esc((saved.opts||[])[n]||'')+'">').join('')+'</div><label>Correct option<select data-answer="'+i+'">'+[0,1,2,3].map(n=>'<option value="'+n+'" '+(Number(saved.answer||0)===n?'selected':'')+'>'+String.fromCharCode(65+n)+'</option>').join('')+'</select></label>'; $('questionEditor').appendChild(box)}}
-function create(){const name=$('newGuildName').value.trim(),creator=$('creatorName').value.trim(),creatorEmail=$('creatorEmail').value.trim(),pin=$('adminPin').value;if(!name||!creator||!creatorEmail||!$('creatorEmail').checkValidity()||pin.length<4){notice('Enter a guild name, your display name and an admin PIN of at least 4 characters.','error');return}const d=read();if(d.guilds.some(g=>g.name.toLowerCase()===name.toLowerCase())){notice('A guild with this name already exists in this browser.','error');return}d.guilds.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name,description:$('newGuildDesc').value.trim(),creator,creatorEmail,pin,questions:makeQuestions(name+'|'+Date.now()+'|'+Math.random()),createdAt:new Date().toISOString()});save(d);$('newGuildName').value='';$('newGuildDesc').value='';$('creatorName').value='';$('creatorEmail').value='';$('adminPin').value='';notice('Guild created! Its unique 20-question entrance test is ready automatically: 5 Maths, 5 Science, 5 English and 5 Reasoning. Admin editing is optional.','success');render()}
-function saveQuestions(){const id=$('adminGuild').value,d=read(),g=d.guilds.find(x=>x.id===id);if(!g){notice('Select a guild first.','error');return}if($('verifyPin').value!==g.pin){notice('Admin PIN does not match.','error');return}const qs=[];for(let i=0;i<20;i++){const q=$('questionEditor').querySelector('[data-q="'+i+'"]').value.trim(),opts=[0,1,2,3].map(n=>$('questionEditor').querySelector('[data-opt="'+i+'-'+n+'"]').value.trim()),answer=Number($('questionEditor').querySelector('[data-answer="'+i+'"]').value);if(!q||opts.some(o=>!o)){notice('Please fill the question and all four options for Q'+(i+1)+'.','error');return}qs.push({subject:subjects[Math.floor(i/5)],q,opts,answer})}g.questions=qs;save(d);$('verifyPin').value='';notice('Saved the edited 20-question entrance test: 5 each for Maths, Science, English and Reasoning.','success')}
-function apply(id){const d=read(),g=d.guilds.find(x=>x.id===id);if(!g)return;if(!g.questions||g.questions.length!==20){g.questions=makeQuestions(g.name+'|'+g.id);save(d)}const applicant=prompt('Enter your player/display name:');if(!applicant||!applicant.trim())return;const applicantEmail=prompt('Enter your Gmail/email so the guild admin can identify your application:');if(!applicantEmail||!/^\S+@\S+\.\S+$/.test(applicantEmail.trim())){notice('Please enter a valid email address to submit the entrance test.','error');return}const existing=d.applications.find(a=>a.guildId===id&&a.applicant.toLowerCase()===applicant.trim().toLowerCase());if(existing&&existing.status==='accepted'){notice('You are already a member in this demo.');return}let score=0;const form=document.createElement('form');form.className='panel';form.innerHTML='<h2>Entrance test: '+esc(g.name)+'</h2><p>20 questions · 5 each from Maths, Science, English and Reasoning. Your answers will be submitted to the guild admin for review.</p>'+g.questions.map((q,i)=>'<div class="question-row"><strong>Q'+(i+1)+' · '+esc(q.subject)+': '+esc(q.q)+'</strong>'+q.opts.map((o,n)=>'<label><input type="radio" name="q'+i+'" value="'+n+'" required style="display:inline;width:auto;margin-right:8px">'+String.fromCharCode(65+n)+'. '+esc(o)+'</label>').join('')+'</div>').join('')+'<button class="primary" type="submit">Submit test to admin</button><button type="button" id="cancelTest">Cancel</button>';const old=$('testPanel');if(old)old.remove();form.id='testPanel';$('guildList').after(form);form.scrollIntoView({behavior:'smooth',block:'start'});$('cancelTest').onclick=()=>form.remove();form.onsubmit=e=>{e.preventDefault();const answers=g.questions.map((q,i)=>Number(new FormData(form).get('q'+i)));score=answers.reduce((s,a,i)=>s+(a===g.questions[i].answer?1:0),0);const app={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),guildId:id,applicant:applicant.trim(),applicantEmail:applicantEmail.trim(),score,answers,submittedAt:new Date().toISOString(),status:'pending'};const fresh=read();fresh.applications.push(app);save(fresh);form.remove();notice('Test saved in demo mode. Score: '+score+'/20. The admin Gmail is recorded, but automatic email delivery and Accept/Reject buttons inside Gmail require the server setup in guild-email-setup.md.','success');render()}}
-function review(id,status){const d=read(),app=d.applications.find(a=>a.id===id);if(!app)return;const g=d.guilds.find(x=>x.id===app.guildId);if(!g)return;const pin=prompt('Enter the admin PIN for '+g.name+':');if(pin!==g.pin){notice('Admin PIN does not match.','error');return}if(status==='accepted'&&app.score<12){notice('This applicant scored below the demo pass mark (12/20). Reject or ask them to try again.','error');return}app.status=status;save(d);notice(status==='accepted'?'Application accepted.':'Application rejected.','success');render()}
-$('createGuild').onclick=create;$('saveQuestions').onclick=saveQuestions;$('adminGuild').onchange=renderEditor;$('searchGuild').oninput=render;render();
+function renderAuth(){
+ const box=$('guildAuthStatus'); if(!box)return;
+ box.innerHTML=currentUser?'<b>Signed in:</b> '+esc(currentUser.email)+' <button id="guildSignOut">Sign out</button>':'<label>Gmail for StudyQuest Guilds<input id="guildLoginEmail" type="email" autocomplete="email" placeholder="you@gmail.com"></label><button class="primary" id="guildSendLink">Send sign-in link</button><small>We send a secure sign-in link; no password needed.</small>';
+ if(currentUser){$('guildSignOut').onclick=async()=>{await sb.auth.signOut();notice('Signed out.')}}else{
+ $('guildSendLink').onclick=async()=>{const email=$('guildLoginEmail').value.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){notice('Enter a valid email address.','error');return}
+ const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});notice(error?error.message:'Sign-in link sent. Open your email on this device to finish signing in.',error?'error':'success')}
+ }
+}
+async function api(action,payload={}){
+ if(!sb||!currentUser)throw new Error('Please sign in with the Gmail link first.');
+ const {data:{session}}=await sb.auth.getSession();if(!session?.access_token)throw new Error('Your session expired. Sign in again.');
+ const {data,error}=await sb.functions.invoke('guild-email',{body:{action,...payload}});
+ if(error)throw new Error(error.message||'Guild server request failed.');
+ if(data?.error)throw new Error(data.error);
+ return data;
+}
+function questionRows(seed){return makeQuestions(seed).map((q,i)=>({subject:q.subject,question:q.q,options:q.opts,correctOption:q.answer,question_no:i+1}))}
+async function loadGuilds(){
+ try{const data=await api('listGuilds');cloudGuilds=data.guilds||[];renderGuilds();await loadApplications()}
+ catch(e){notice(e.message,'error')}
+}
+function renderGuilds(){
+ const term=$('searchGuild').value.trim().toLowerCase(),items=cloudGuilds.filter(g=>g.name.toLowerCase().includes(term));
+ $('guildList').innerHTML=items.length?items.map(g=>'<article class="guild-card"><h3>'+esc(g.name)+'</h3><p>'+esc(g.description||'A StudyQuest learning guild')+'</p><p>Admin: '+esc(g.admin_email||'Guild admin')+'</p><button data-apply="'+esc(g.id)+'">Take entrance test</button></article>').join(''):'<p>No guilds found. Create the first one!</p>';
+ $('adminGuild').innerHTML='<option value="">Choose your guild</option>'+cloudGuilds.filter(g=>g.admin_id===currentUser?.id).map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>').join('');
+ $('guildList').querySelectorAll('[data-apply]').forEach(b=>b.onclick=()=>startTest(b.dataset.apply));
+}
+async function loadApplications(){
+ try{const d=await api('myApplications');const apps=d.applications||[];$('myApplications').innerHTML=apps.length?apps.map(a=>'<p><b>'+esc(a.sq_guilds?.name||'Guild')+'</b> — '+esc(a.applicant_name||a.applicant_email||'Applicant')+' — '+a.score+'/20 — <b>'+esc(a.status)+'</b></p>').join(''):'No applications yet.'}catch(e){$('myApplications').textContent=e.message}
+}
+async function create(){
+ try{
+ if(!currentUser)throw new Error('Sign in with Gmail first.');
+ const name=$('newGuildName').value.trim(),description=$('newGuildDesc').value.trim(),creator=$('creatorName').value.trim(),email=(currentUser.email||'').trim().toLowerCase();
+ if(name.length<3||!creator)throw new Error('Enter a guild name (at least 3 characters) and your display name.');
+ if($('creatorEmail').value.trim()&&$('creatorEmail').value.trim().toLowerCase()!==email)throw new Error('Guild admin Gmail must match the signed-in Gmail.');
+ const questions=questionRows(name+'|'+Date.now());
+ const data=await api('createGuild',{name,description,adminEmail:email,questions});
+ $('newGuildName').value='';$('newGuildDesc').value='';$('creatorName').value='';$('creatorEmail').value=email;
+ notice('Guild created! Its 20-question test is saved securely.','success');await loadGuilds();
+ }catch(e){notice(e.message,'error')}
+}
+async function startTest(id){
+ if(!currentUser){notice('Sign in with Gmail before applying.','error');return}
+ try{
+ const data=await api('getEntranceTest',{guildId:id});testGuild=cloudGuilds.find(g=>g.id===id);
+ const qs=data.questions||[];if(qs.length!==20)throw new Error('This guild test is not ready.');
+ const form=document.createElement('form');form.className='panel';form.id='testPanel';
+ form.innerHTML='<h2>Entrance test: '+esc(testGuild?.name||'Guild')+'</h2><p>20 questions. Your score will be emailed to the guild admin for review.</p><label>Your display name<input id="applicantName" maxlength="60" required></label><label>Your Gmail<input id="applicantEmail" type="email" required value="'+esc(currentUser.email||'')+'"></label>'+qs.map((q,i)=>'<div class="question-row"><strong>Q'+(i+1)+' · '+esc(q.subject)+': '+esc(q.question)+'</strong>'+q.options.map((o,n)=>'<label><input type="radio" name="q'+i+'" value="'+n+'" required style="display:inline;width:auto;margin-right:8px"> '+String.fromCharCode(65+n)+'. '+esc(o)+'</label>').join('')+'</div>').join('')+'<button class="primary" type="submit">Submit entrance test</button><button type="button" id="cancelTest">Cancel</button>';
+ $('testPanel')?.remove();$('guildList').after(form);form.scrollIntoView({behavior:'smooth',block:'start'});$('cancelTest').onclick=()=>form.remove();
+ form.onsubmit=async e=>{e.preventDefault();const answers=qs.map((q,i)=>Number(new FormData(form).get('q'+i)));const applicantName=$('applicantName').value.trim(),applicantEmail=$('applicantEmail').value.trim().toLowerCase();
+ try{const result=await api('apply',{guildId:id,applicantName,applicantEmail,answers});form.remove();notice(result.message+' Score: '+result.application.score+'/20.','success');await loadApplications()}catch(err){notice(err.message,'error')}
+ };
+ }catch(e){notice(e.message,'error')}
+}
+function renderEditor(){const id=$('adminGuild').value,g=cloudGuilds.find(x=>x.id===id);$('questionEditor').innerHTML=g?'<p>This guild uses its automatically generated 20-question test (5 each from Maths, Science, English and Reasoning). Questions are stored securely on the server.</p>':'<p>Select a guild you administer.</p>'}
+async function saveQuestions(){notice('Custom question editing is not enabled in this connected version. Guilds receive a generated 20-question entrance test.','error')}
+$('createGuild').onclick=create;$('saveQuestions').onclick=saveQuestions;$('adminGuild').onchange=renderEditor;$('searchGuild').oninput=renderGuilds;
+init();
 })();
