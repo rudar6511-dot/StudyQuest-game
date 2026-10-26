@@ -136,15 +136,7 @@ Deno.serve(async (req) => {
       }, { onConflict: "guild_id,applicant_id" }).select("id,score,status,submitted_at").single();
       if (insertError) throw insertError;
 
-      const tokenRows = [];
-      for (const decision of ["accepted", "rejected"]) {
-        const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
-        const token = [...tokenBytes].map(b => b.toString(16).padStart(2, "0")).join("");
-        const tokenHash = await sha256(token);
-        tokenRows.push({ application_id: application.id, token_hash: tokenHash, decision, expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() });
-        (decision === "accepted" ? (globalThis as any).__acceptTokens : (globalThis as any).__rejectTokens);
-      }
-      // Generate a fresh pair and retain only hashes in the database.
+      // Create one-time review tokens; only token hashes are stored in the database.
       const acceptToken = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, "0")).join("");
       const rejectToken = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, "0")).join("");
       const tokenInsert = await adminDb.from("sq_guild_review_tokens").insert([
