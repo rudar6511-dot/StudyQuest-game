@@ -6,6 +6,7 @@ create table if not exists public.sq_guilds (
  id uuid primary key default gen_random_uuid(),
  name text not null check (char_length(name) between 3 and 40),
  description text not null default '' check (char_length(description) <= 160),
+ admin_email text not null,
  admin_id uuid not null references auth.users(id) on delete cascade,
  created_at timestamptz not null default now()
 );
@@ -24,6 +25,7 @@ create table if not exists public.sq_guild_applications (
  id uuid primary key default gen_random_uuid(),
  guild_id uuid not null references public.sq_guilds(id) on delete cascade,
  applicant_id uuid not null references auth.users(id) on delete cascade,
+ applicant_email text not null,
  answers jsonb not null,
  score int check (score between 0 and 20),
  status text not null default 'pending' check (status in ('pending','accepted','rejected')),
@@ -62,3 +64,7 @@ create policy "Guild members visible" on public.sq_guild_members for select usin
 drop policy if exists "Users join only accepted guilds" on public.sq_guild_members;
 create policy "Users join only accepted guilds" on public.sq_guild_members for insert to authenticated with check (user_id=auth.uid() and exists(select 1 from public.sq_guild_applications a where a.guild_id=sq_guild_members.guild_id and a.applicant_id=auth.uid() and a.status='accepted'));
 -- NOTE: Production grading must happen server-side (RPC/Edge Function). Do not trust client-supplied scores.
+
+-- Add these columns safely if the tables were created from an earlier version.
+alter table public.sq_guilds add column if not exists admin_email text;
+alter table public.sq_guild_applications add column if not exists applicant_email text;
