@@ -1,6 +1,5 @@
--- StudyQuest Guild Gmail approval system (production-oriented starter)
+-- StudyQuest Guild Gmail approval system
 create extension if not exists pgcrypto;
-
 create table if not exists public.sq_guilds (
  id uuid primary key default gen_random_uuid(),
  name text not null check (char_length(name) between 3 and 40),
@@ -10,7 +9,6 @@ create table if not exists public.sq_guilds (
  created_at timestamptz not null default now()
 );
 create unique index if not exists sq_guilds_name_lower_unique on public.sq_guilds(lower(name));
-
 create table if not exists public.sq_guild_questions (
  id uuid primary key default gen_random_uuid(),
  guild_id uuid not null references public.sq_guilds(id) on delete cascade,
@@ -49,14 +47,11 @@ create table if not exists public.sq_guild_review_tokens (
  used_at timestamptz,
  created_at timestamptz not null default now()
 );
-
 alter table public.sq_guilds enable row level security;
 alter table public.sq_guild_questions enable row level security;
 alter table public.sq_guild_applications enable row level security;
 alter table public.sq_guild_members enable row level security;
 alter table public.sq_guild_review_tokens enable row level security;
--- All sensitive reads/writes are done by the Edge Function using service role.
--- Browser clients get no direct table policies. Never expose service role key.
-revoke all on public.sq_guilds, public.sq_guild_questions, public.sq_guild_applications,
- public.sq_guild_members, public.sq_guild_review_tokens from anon, authenticated;
+-- Edge Function is the only data access layer; never put service-role key in browser.
+revoke all on public.sq_guilds, public.sq_guild_questions, public.sq_guild_applications, public.sq_guild_members, public.sq_guild_review_tokens from anon, authenticated;
 grant usage on schema public to authenticated;
