@@ -1,4 +1,4 @@
-const CACHE_NAME = "studyquest-pwa-v3";
+const CACHE_NAME = "studyquest-pwa-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -17,6 +17,12 @@ const APP_SHELL = [
   "./background-music.css",
   "./premium.js",
   "./premium.css",
+  "./premium-world.html",
+  "./premium-world.css",
+  "./premium-world.js",
+  "./premium-quiz.js",
+  "./premium-subjects.css",
+  "./premium-subjects.js",
   "./studyquest-features.js",
   "./studyquest-features.css",
   "./ai-study-coach.js",
