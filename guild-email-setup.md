@@ -1,18 +1,28 @@
-# StudyQuest Guild Gmail review — setup status
+# Guild Gmail approval backend setup
 
-## What the current commit does
-- Guild creation asks for the admin's Gmail/email and saves it with the guild in demo mode.
-- Applying to a guild asks for the applicant's email and records it with the score.
-- The current Guild page still stores applications in browser localStorage. It does **not** send an email, and it cannot safely process Accept/Reject links from Gmail yet.
+The backend function is in `supabase/functions/guild-email/index.ts`. The Gmail review landing page is `guild-review.html`.
 
-## Why the email approval flow needs backend setup
-The requested workflow needs a server-side email provider and a database-backed review endpoint. A browser-only mailto link is not automatic email delivery, and a link that changes membership must be validated on the server so another person cannot accept/reject an application by editing the URL.
+## Required secrets
+In Supabase Dashboard → Edge Functions → Secrets, configure:
+- `SUPABASE_URL`: project URL
+- `SUPABASE_ANON_KEY`: project publishable/anon key
+- `SUPABASE_SERVICE_ROLE_KEY`: service-role key (server secret only; NEVER place in browser/GitHub)
+- `RESEND_API_KEY`: API key from your Resend account
+- `GUILD_FROM_EMAIL`: sender address verified with Resend, e.g. `StudyQuest <guilds@your-verified-domain.example>`
+- `SITE_URL`: deployed website origin, e.g. `https://your-site.example` (no trailing slash)
 
-## Next implementation/setup requirements
-1. Use Supabase Auth so guild creators/applicants have verified accounts.
-2. Run guild-setup.sql in Supabase SQL Editor. The new admin_email and applicant_email columns are included; existing tables get safe ADD COLUMN IF NOT EXISTS statements.
-3. Configure an email provider such as Resend on a Supabase Edge Function. Store the provider API key as a Supabase secret (never in GitHub/frontend).
-4. Move guilds, applications, scores, and review decisions from localStorage into Supabase tables.
-5. Send the admin an email with the applicant name, email, score out of 20, and one-time Accept/Reject links. The links must call a server-side endpoint that verifies a one-time token and updates the application status in the database.
+## Deploy
+Install Supabase CLI and link the project, then deploy the function. Because Gmail review links are one-time tokens and do not require the admin to sign in, deploy this function with JWT verification disabled for the endpoint, or configure equivalent routing:
+```sh
+supabase functions deploy guild-email --no-verify-jwt
+```
+The function itself requires a valid Supabase Auth bearer token for all actions except `reviewEmailToken`. Do not remove the function's token validation.
 
-**Important:** Do not advertise the feature as working email approval until steps 3–5 are implemented and tested. The present commit is the email-field groundwork, not the completed automated Gmail workflow.
+## Run SQL
+Run `guild-setup.sql` in Supabase Dashboard → SQL Editor. It creates tables for guilds, questions, applications, members, and one-time review tokens. RLS is enabled and direct browser table access is revoked; the Edge Function uses the service-role key on the server.
+
+## Important integration status
+The current `guild.html`/ `guild.js` page still contains its earlier localStorage demo workflow. It asks for the emails but does not yet call this Edge Function for creating guilds or submitting applications. The existing site login also stores a local browser flag; that is not a verified Supabase Auth session. Therefore, running SQL alone will not activate the full workflow. The UI must be connected to Supabase Auth and the `guild-email` actions before real Gmail delivery works.
+
+## Email review behavior
+On application submission the function grades the 20 answers on the server, stores the score, and sends the admin an email with the score plus Accept/Reject links. Links are random, hashed in the database, expire after seven days, and are single-use. Acceptance inserts the user into the guild membership table. Configure a verified sender domain in Resend before testing real delivery.
